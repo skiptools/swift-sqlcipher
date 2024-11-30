@@ -85,7 +85,7 @@ class CipherTests: XCTestCase {
                 fixture("encrypted-3.x", withExtension: "sqlite") :
                 fixture("encrypted-4.x", withExtension: "sqlite")
 
-        #if !os(Android) && !os(Linux) // file permission modification unsupported on Android
+        #if !os(Android) && !os(Linux) && !os(Windows) // file permission modification unsupported on non-Darwin platforms
         try FileManager.default.setAttributes([FileAttributeKey.immutable: 1], ofItemAtPath: encryptedFile)
         XCTAssertFalse(FileManager.default.isWritableFile(atPath: encryptedFile))
         #endif
