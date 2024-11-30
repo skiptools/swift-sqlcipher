@@ -9,7 +9,7 @@ on:
   schedule:
     - cron: '0 6,18 * * *'
 jobs:
-  test:
+  darwin+android:
     # emulator fails to launch on ARM macOS with: HVF error: HV_UNSUPPORTED
     #runs-on: macos-15
     # so we need to run on Intel macOS

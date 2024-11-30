@@ -374,7 +374,7 @@ class ConnectionTests: SQLiteTestCase {
     }
 
     // https://github.com/stephencelis/SQLite.swift/issues/1071
-    #if !os(Linux) && !os(Android)
+    #if !os(Linux) && !os(Android) && !os(Windows)
     func test_createFunction_withArrayArguments() throws {
         db.createFunction("hello") { $0[0].map { "Hello, \($0)!" } }
 

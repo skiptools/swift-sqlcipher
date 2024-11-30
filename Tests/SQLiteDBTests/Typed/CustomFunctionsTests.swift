@@ -2,7 +2,7 @@ import XCTest
 import SQLiteDB
 
 // https://github.com/stephencelis/SQLite.swift/issues/1071
-#if !os(Linux) && !os(Android)
+#if !os(Linux) && !os(Android) && !os(Windows)
 
 class CustomFunctionNoArgsTests: SQLiteTestCase {
     typealias FunctionNoOptional              = () -> Expression<String>

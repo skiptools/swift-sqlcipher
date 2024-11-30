@@ -354,7 +354,7 @@ class QueryTests: XCTestCase {
         )
     }
 
-    #if !os(Linux) && !os(Android) // depends on exact JSON serialization
+    #if !os(Linux) && !os(Android) && !os(Windows) // depends on exact JSON serialization
     func test_insert_encodable_with_nested_encodable() throws {
         let emails = Table("emails")
         let value1 = TestCodable(int: 1, string: "2", bool: true, float: 3, double: 4,
