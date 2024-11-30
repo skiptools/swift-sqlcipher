@@ -91,8 +91,10 @@ class CipherTests: XCTestCase {
         #endif
 
         defer {
+            #if !os(Android) && !os(Linux) && !os(Windows) // file permission modification unsupported on non-Darwin platforms
             // ensure file can be cleaned up afterwards
             try? FileManager.default.setAttributes([FileAttributeKey.immutable: 0], ofItemAtPath: encryptedFile)
+            #endif
         }
 
         let conn = try Connection(encryptedFile)
