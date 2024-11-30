@@ -119,7 +119,7 @@ Swift code.
 
   ```swift
   dependencies: [
-      .package(url: "https://github.com/skiptools/swift-sqlite.git", "0.0.0"..<"2.0.0")
+      .package(url: "https://github.com/skiptools/swift-sqlite.git", from "1.0.0")
   ]
   ```
 
