@@ -92,7 +92,7 @@ class SchemaChangerTests: SQLiteTestCase {
     }
 
     func test_add_column() throws {
-        let column = Expression<String>("new_column")
+        let column = SQLExpression<String>("new_column")
         let newColumn = ColumnDefinition(name: "new_column",
                                          type: .TEXT,
                                          nullable: true,

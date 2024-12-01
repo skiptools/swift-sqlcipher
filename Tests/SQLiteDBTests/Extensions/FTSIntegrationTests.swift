@@ -11,7 +11,7 @@ import SQLite3
 @testable import SQLiteDB
 
 class FTSIntegrationTests: SQLiteTestCase {
-    let email = Expression<String>("email")
+    let email = SQLExpression<String>("email")
     let index = VirtualTable("index")
 
     private func createIndex() throws {

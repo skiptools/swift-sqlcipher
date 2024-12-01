@@ -19,7 +19,7 @@ class ConnectionAttachTests: SQLiteTestCase {
         try db.attach(.inMemory, as: schemaName)
 
         let table = Table("attached_users", database: schemaName)
-        let name = Expression<String>("string")
+        let name = SQLExpression<String>("string")
 
         // create a table, insert some data
         try db.run(table.create { builder in
@@ -42,7 +42,7 @@ class ConnectionAttachTests: SQLiteTestCase {
         try db.attach(.uri(testDb, parameters: [.mode(.readOnly)]), as: schemaName)
 
         let table = Table("tests", database: schemaName)
-        let email = Expression<String>("email")
+        let email = SQLExpression<String>("email")
 
         let rows = try db.prepare(table.select(email)).map { $0[email] }
         XCTAssertEqual(["foo@bar.com"], rows)

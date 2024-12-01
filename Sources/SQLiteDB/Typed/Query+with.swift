@@ -62,14 +62,14 @@ extension QueryType {
         }
 
         let innerClauses = ", ".join(clauses.with.clauses.map { (clause) in
-            let hintExpr: Expression<Void>?
+            let hintExpr: SQLExpression<Void>?
             if let hint = clause.hint {
-                hintExpr = Expression<Void>(literal: hint.rawValue)
+                hintExpr = SQLExpression<Void>(literal: hint.rawValue)
             } else {
                 hintExpr = nil
             }
 
-            let columnExpr: Expression<Void>?
+            let columnExpr: SQLExpression<Void>?
             if let columns = clause.columns {
                 columnExpr = "".wrap(", ".join(columns))
             } else {
@@ -79,16 +79,16 @@ extension QueryType {
             let expressions: [Expressible?] = [
                 clause.alias.tableName(),
                 columnExpr,
-                Expression<Void>(literal: "AS"),
+                SQLExpression<Void>(literal: "AS"),
                 hintExpr,
-                "".wrap(clause.query) as Expression<Void>
+                "".wrap(clause.query) as SQLExpression<Void>
             ]
 
             return " ".join(expressions.compactMap { $0 })
         })
 
         return " ".join([
-            Expression<Void>(literal: clauses.with.recursive ? "WITH RECURSIVE" : "WITH"),
+            SQLExpression<Void>(literal: clauses.with.recursive ? "WITH RECURSIVE" : "WITH"),
             innerClauses
         ])
     }

@@ -12,9 +12,9 @@ import SQLite3
 
 class QueryIntegrationTests: SQLiteTestCase {
 
-    let id = Expression<Int64>("id")
-    let email = Expression<String>("email")
-    let age = Expression<Int>("age")
+    let id = SQLExpression<Int64>("id")
+    let email = SQLExpression<String>("email")
+    let age = SQLExpression<Int>("age")
 
     override func setUpWithError() throws {
         try super.setUpWithError()
@@ -24,7 +24,7 @@ class QueryIntegrationTests: SQLiteTestCase {
     // MARK: -
 
     func test_select() throws {
-        let managerId = Expression<Int64>("manager_id")
+        let managerId = SQLExpression<Int64>("manager_id")
         let managers = users.alias("managers")
 
         let alice = try db.run(users.insert(email <- "alice@example.com"))
@@ -39,7 +39,7 @@ class QueryIntegrationTests: SQLiteTestCase {
         let names = ["a", "b", "c"]
         try insertUsers(names)
 
-        let emailColumn = Expression<String>("email")
+        let emailColumn = SQLExpression<String>("email")
         let emails = try db.prepareRowIterator(users).map { $0[emailColumn] }
 
         XCTAssertEqual(names.map({ "\($0)@example.com" }), emails.sorted())
@@ -55,7 +55,7 @@ class QueryIntegrationTests: SQLiteTestCase {
     }
 
     func test_select_optional() throws {
-        let managerId = Expression<Int64?>("manager_id")
+        let managerId = SQLExpression<Int64?>("manager_id")
         let managers = users.alias("managers")
 
         let alice = try db.run(users.insert(email <- "alice@example.com"))
@@ -69,15 +69,15 @@ class QueryIntegrationTests: SQLiteTestCase {
     func test_select_codable() throws {
         let table = Table("codable")
         try db.run(table.create { builder in
-            builder.column(Expression<Int>("int"))
-            builder.column(Expression<String>("string"))
-            builder.column(Expression<Bool>("bool"))
-            builder.column(Expression<Double>("float"))
-            builder.column(Expression<Double>("double"))
-            builder.column(Expression<Date>("date"))
-            builder.column(Expression<UUID>("uuid"))
-            builder.column(Expression<String?>("optional"))
-            builder.column(Expression<Data>("sub"))
+            builder.column(SQLExpression<Int>("int"))
+            builder.column(SQLExpression<String>("string"))
+            builder.column(SQLExpression<Bool>("bool"))
+            builder.column(SQLExpression<Double>("float"))
+            builder.column(SQLExpression<Double>("double"))
+            builder.column(SQLExpression<Date>("date"))
+            builder.column(SQLExpression<UUID>("uuid"))
+            builder.column(SQLExpression<String?>("optional"))
+            builder.column(SQLExpression<Data>("sub"))
         })
 
         let value1 = TestCodable(int: 1, string: "2", bool: true, float: 3, double: 4,
@@ -133,13 +133,13 @@ class QueryIntegrationTests: SQLiteTestCase {
     func test_insert_many_encodables() throws {
         let table = Table("codable")
         try db.run(table.create { builder in
-            builder.column(Expression<Int?>("int"))
-            builder.column(Expression<String?>("string"))
-            builder.column(Expression<Bool?>("bool"))
-            builder.column(Expression<Double?>("float"))
-            builder.column(Expression<Double?>("double"))
-            builder.column(Expression<Date?>("date"))
-            builder.column(Expression<UUID?>("uuid"))
+            builder.column(SQLExpression<Int?>("int"))
+            builder.column(SQLExpression<String?>("string"))
+            builder.column(SQLExpression<Bool?>("bool"))
+            builder.column(SQLExpression<Double?>("float"))
+            builder.column(SQLExpression<Double?>("double"))
+            builder.column(SQLExpression<Date?>("date"))
+            builder.column(SQLExpression<UUID?>("uuid"))
         })
 
         let value1 = TestOptionalCodable(int: 5, string: "6", bool: true, float: 7, double: 8,
@@ -161,9 +161,9 @@ class QueryIntegrationTests: SQLiteTestCase {
 
         let table = Table("custom_codable")
         try db.run(table.create { builder in
-            builder.column(Expression<Int?>("myInt"))
-            builder.column(Expression<String?>("myString"))
-            builder.column(Expression<String?>("myOptionalArray"))
+            builder.column(SQLExpression<Int?>("myInt"))
+            builder.column(SQLExpression<String?>("myString"))
+            builder.column(SQLExpression<String?>("myOptionalArray"))
         })
 
         let customType = TestTypeWithOptionalArray(myInt: 13, myString: "foo", myOptionalArray: [1, 2, 3])
@@ -216,22 +216,22 @@ class QueryIntegrationTests: SQLiteTestCase {
         let actualIDs = try db.prepare(query1.union(query2)).map { $0[id] }
         XCTAssertEqual(expectedIDs, actualIDs)
 
-        let query3 = users.select(users[*], Expression<Int>(literal: "1 AS weight")).filter(email == "sally@example.com")
-        let query4 = users.select(users[*], Expression<Int>(literal: "2 AS weight")).filter(email == "alice@example.com")
+        let query3 = users.select(users[*], SQLExpression<Int>(literal: "1 AS weight")).filter(email == "sally@example.com")
+        let query4 = users.select(users[*], SQLExpression<Int>(literal: "2 AS weight")).filter(email == "alice@example.com")
 
-        let sql = query3.union(query4).order(Expression<Int>(literal: "weight")).asSQL()
+        let sql = query3.union(query4).order(SQLExpression<Int>(literal: "weight")).asSQL()
         XCTAssertEqual(sql,
         """
         SELECT "users".*, 1 AS weight FROM "users" WHERE ("email" = 'sally@example.com') UNION \
         SELECT "users".*, 2 AS weight FROM "users" WHERE ("email" = 'alice@example.com') ORDER BY weight
         """)
 
-        let orderedIDs = try db.prepare(query3.union(query4).order(Expression<Int>(literal: "weight"), email)).map { $0[id] }
+        let orderedIDs = try db.prepare(query3.union(query4).order(SQLExpression<Int>(literal: "weight"), email)).map { $0[id] }
         XCTAssertEqual(Array(expectedIDs.reversed()), orderedIDs)
     }
 
     func test_no_such_column() throws {
-        let doesNotExist = Expression<String>("doesNotExist")
+        let doesNotExist = SQLExpression<String>("doesNotExist")
         try insertUser("alice")
         let row = try db.pluck(users.filter(email == "alice@example.com"))!
 
@@ -272,15 +272,15 @@ class QueryIntegrationTests: SQLiteTestCase {
     // https://github.com/stephencelis/SQLite.swift/issues/285
     func test_order_by_random() throws {
         try insertUsers(["a", "b", "c'"])
-        let result = Array(try db.prepare(users.select(email).order(Expression<Int>.random()).limit(1)))
+        let result = Array(try db.prepare(users.select(email).order(SQLExpression<Int>.random()).limit(1)))
         XCTAssertEqual(1, result.count)
     }
 
     func test_with_recursive() throws {
         let nodes = Table("nodes")
-        let id = Expression<Int64>("id")
-        let parent = Expression<Int64?>("parent")
-        let value = Expression<Int64>("value")
+        let id = SQLExpression<Int64>("id")
+        let parent = SQLExpression<Int64?>("parent")
+        let value = SQLExpression<Int64>("value")
 
         try db.run(nodes.create { builder in
             builder.column(id)
@@ -320,7 +320,7 @@ class QueryIntegrationTests: SQLiteTestCase {
     /// Verify that `*` is properly expanded in a SELECT statement following a WITH clause.
     func test_with_glob_expansion() throws {
         let names = Table("names")
-        let name = Expression<String>("name")
+        let name = SQLExpression<String>("name")
         try db.run(names.create { builder in
             builder.column(email)
             builder.column(name)

@@ -51,15 +51,15 @@ extension VirtualTable {
     ///
     /// - Returns: An expression appended with a `MATCH` query against the given
     ///   pattern.
-    public func match(_ pattern: String) -> Expression<Bool> {
+    public func match(_ pattern: String) -> SQLExpression<Bool> {
         "MATCH".infix(tableName(), pattern)
     }
 
-    public func match(_ pattern: Expression<String>) -> Expression<Bool> {
+    public func match(_ pattern: SQLExpression<String>) -> SQLExpression<Bool> {
         "MATCH".infix(tableName(), pattern)
     }
 
-    public func match(_ pattern: Expression<String?>) -> Expression<Bool?> {
+    public func match(_ pattern: SQLExpression<String?>) -> SQLExpression<Bool?> {
         "MATCH".infix(tableName(), pattern)
     }
 
@@ -77,11 +77,11 @@ extension VirtualTable {
         filter(match(pattern))
     }
 
-    public func match(_ pattern: Expression<String>) -> QueryType {
+    public func match(_ pattern: SQLExpression<String>) -> QueryType {
         filter(match(pattern))
     }
 
-    public func match(_ pattern: Expression<String?>) -> QueryType {
+    public func match(_ pattern: SQLExpression<String?>) -> QueryType {
         filter(match(pattern))
     }
 
@@ -209,7 +209,7 @@ open class FTSConfig {
         var options = Options()
         options.append(formatColumnDefinitions())
         if let tokenizer {
-            options.append("tokenize", value: Expression<Void>(literal: tokenizer.description))
+            options.append("tokenize", value: SQLExpression<Void>(literal: tokenizer.description))
         }
         options.appendCommaSeparated("prefix", values: prefixes.sorted().map { String($0) })
         if isContentless {
@@ -237,11 +237,11 @@ open class FTSConfig {
         }
 
         @discardableResult mutating func append(_ key: String, value: String) -> Options {
-            append(key, value: Expression<String>(value))
+            append(key, value: SQLExpression<String>(value))
         }
 
         @discardableResult mutating func append(_ key: String, value: Expressible) -> Options {
-            arguments.append("=".join([Expression<Void>(literal: key), value]))
+            arguments.append("=".join([SQLExpression<Void>(literal: key), value]))
             return self
         }
     }

@@ -73,7 +73,7 @@ open class FTS5Config: FTSConfig {
             options.append("content_rowid", value: contentRowId)
         }
         if let columnSize {
-            options.append("columnsize", value: Expression<Int>(value: columnSize))
+            options.append("columnsize", value: SQLExpression<Int>(value: columnSize))
         }
         if let detail {
             options.append("detail", value: detail.rawValue)
@@ -84,7 +84,7 @@ open class FTS5Config: FTSConfig {
     override func formatColumnDefinitions() -> [Expressible] {
         columnDefinitions.map { definition in
             if definition.options.contains(.unindexed) {
-                return " ".join([definition.0, Expression<Void>(literal: "UNINDEXED")])
+                return " ".join([definition.0, SQLExpression<Void>(literal: "UNINDEXED")])
             } else {
                 return definition.0
             }

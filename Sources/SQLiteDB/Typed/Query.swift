@@ -140,10 +140,10 @@ extension SchemaType {
     /// - Parameter all: A list of expressions to select.
     ///
     /// - Returns: A query with the given `SELECT` clause applied.
-    public func select<V: Value>(_ column: Expression<V>) -> ScalarQuery<V> {
+    public func select<V: Value>(_ column: SQLExpression<V>) -> ScalarQuery<V> {
         select(false, [column])
     }
-    public func select<V: Value>(_ column: Expression<V?>) -> ScalarQuery<V?> {
+    public func select<V: Value>(_ column: SQLExpression<V?>) -> ScalarQuery<V?> {
         select(false, [column])
     }
 
@@ -159,15 +159,15 @@ extension SchemaType {
     /// - Parameter column: A list of expressions to select.
     ///
     /// - Returns: A query with the given `SELECT DISTINCT` clause applied.
-    public func select<V: Value>(distinct column: Expression<V>) -> ScalarQuery<V> {
+    public func select<V: Value>(distinct column: SQLExpression<V>) -> ScalarQuery<V> {
         select(true, [column])
     }
-    public func select<V: Value>(distinct column: Expression<V?>) -> ScalarQuery<V?> {
+    public func select<V: Value>(distinct column: SQLExpression<V?>) -> ScalarQuery<V?> {
         select(true, [column])
     }
 
     public var count: ScalarQuery<Int> {
-        select(Expression.count(*))
+        select(SQLExpression.count(*))
     }
 
 }
@@ -223,8 +223,8 @@ extension QueryType {
     ///   - condition: A boolean expression describing the join condition.
     ///
     /// - Returns: A query with the given `JOIN` clause applied.
-    public func join(_ table: QueryType, on condition: Expression<Bool>) -> Self {
-        join(table, on: Expression<Bool?>(condition))
+    public func join(_ table: QueryType, on condition: SQLExpression<Bool>) -> Self {
+        join(table, on: SQLExpression<Bool?>(condition))
     }
 
     /// Adds a `JOIN` clause to the query.
@@ -244,7 +244,7 @@ extension QueryType {
     ///   - condition: A boolean expression describing the join condition.
     ///
     /// - Returns: A query with the given `JOIN` clause applied.
-    public func join(_ table: QueryType, on condition: Expression<Bool?>) -> Self {
+    public func join(_ table: QueryType, on condition: SQLExpression<Bool?>) -> Self {
         join(.inner, table, on: condition)
     }
 
@@ -267,8 +267,8 @@ extension QueryType {
     ///   - condition: A boolean expression describing the join condition.
     ///
     /// - Returns: A query with the given `JOIN` clause applied.
-    public func join(_ type: JoinType, _ table: QueryType, on condition: Expression<Bool>) -> Self {
-        join(type, table, on: Expression<Bool?>(condition))
+    public func join(_ type: JoinType, _ table: QueryType, on condition: SQLExpression<Bool>) -> Self {
+        join(type, table, on: SQLExpression<Bool?>(condition))
     }
 
     /// Adds a `JOIN` clause to the query.
@@ -290,7 +290,7 @@ extension QueryType {
     ///   - condition: A boolean expression describing the join condition.
     ///
     /// - Returns: A query with the given `JOIN` clause applied.
-    public func join(_ type: JoinType, _ table: QueryType, on condition: Expression<Bool?>) -> Self {
+    public func join(_ type: JoinType, _ table: QueryType, on condition: SQLExpression<Bool?>) -> Self {
         var query = self
         query.clauses.join.append((type: type, query: table,
                                           condition: table.clauses.filters.map { condition && $0 } ?? condition as Expressible))
@@ -310,8 +310,8 @@ extension QueryType {
     /// - Parameter condition: A boolean expression to filter on.
     ///
     /// - Returns: A query with the given `WHERE` clause applied.
-    public func filter(_ predicate: Expression<Bool>) -> Self {
-        filter(Expression<Bool?>(predicate))
+    public func filter(_ predicate: SQLExpression<Bool>) -> Self {
+        filter(SQLExpression<Bool?>(predicate))
     }
 
     /// Adds a condition to the query’s `WHERE` clause.
@@ -325,7 +325,7 @@ extension QueryType {
     /// - Parameter condition: A boolean expression to filter on.
     ///
     /// - Returns: A query with the given `WHERE` clause applied.
-    public func filter(_ predicate: Expression<Bool?>) -> Self {
+    public func filter(_ predicate: SQLExpression<Bool?>) -> Self {
         var query = self
         query.clauses.filters = query.clauses.filters.map { $0 && predicate } ?? predicate
         return query
@@ -333,13 +333,13 @@ extension QueryType {
 
     /// Adds a condition to the query’s `WHERE` clause.
     /// This is an alias for `filter(predicate)`
-    public func `where`(_ predicate: Expression<Bool>) -> Self {
-        `where`(Expression<Bool?>(predicate))
+    public func `where`(_ predicate: SQLExpression<Bool>) -> Self {
+        `where`(SQLExpression<Bool?>(predicate))
     }
 
     /// Adds a condition to the query’s `WHERE` clause.
     /// This is an alias for `filter(predicate)`
-    public func `where`(_ predicate: Expression<Bool?>) -> Self {
+    public func `where`(_ predicate: SQLExpression<Bool?>) -> Self {
         filter(predicate)
     }
 
@@ -372,7 +372,7 @@ extension QueryType {
     ///   - having: A condition determining which groups are returned.
     ///
     /// - Returns: A query with the given `GROUP BY`–`HAVING` clause applied.
-    public func group(_ by: Expressible, having: Expression<Bool>) -> Self {
+    public func group(_ by: Expressible, having: SQLExpression<Bool>) -> Self {
         group([by], having: having)
     }
 
@@ -385,7 +385,7 @@ extension QueryType {
     ///   - having: A condition determining which groups are returned.
     ///
     /// - Returns: A query with the given `GROUP BY`–`HAVING` clause applied.
-    public func group(_ by: Expressible, having: Expression<Bool?>) -> Self {
+    public func group(_ by: Expressible, having: SQLExpression<Bool?>) -> Self {
         group([by], having: having)
     }
 
@@ -398,8 +398,8 @@ extension QueryType {
     ///   - having: A condition determining which groups are returned.
     ///
     /// - Returns: A query with the given `GROUP BY`–`HAVING` clause applied.
-    public func group(_ by: [Expressible], having: Expression<Bool>) -> Self {
-        group(by, Expression<Bool?>(having))
+    public func group(_ by: [Expressible], having: SQLExpression<Bool>) -> Self {
+        group(by, SQLExpression<Bool?>(having))
     }
 
     /// Sets a `GROUP BY`-`HAVING` clause on the query.
@@ -411,11 +411,11 @@ extension QueryType {
     ///   - having: A condition determining which groups are returned.
     ///
     /// - Returns: A query with the given `GROUP BY`–`HAVING` clause applied.
-    public func group(_ by: [Expressible], having: Expression<Bool?>) -> Self {
+    public func group(_ by: [Expressible], having: SQLExpression<Bool?>) -> Self {
         group(by, having)
     }
 
-    fileprivate func group(_ by: [Expressible], _ having: Expression<Bool?>?) -> Self {
+    fileprivate func group(_ by: [Expressible], _ having: SQLExpression<Bool?>?) -> Self {
         var query = self
         query.clauses.group = (by, having)
         return query
@@ -507,10 +507,10 @@ extension QueryType {
 
     fileprivate var selectClause: Expressible {
         " ".join([
-           Expression<Void>(literal:
+            SQLExpression<Void>(literal:
                             clauses.select.distinct ? "SELECT DISTINCT" : "SELECT"),
            ", ".join(clauses.select.columns),
-           Expression<Void>(literal: "FROM"),
+           SQLExpression<Void>(literal: "FROM"),
            tableName(alias: true)
        ])
     }
@@ -523,9 +523,9 @@ extension QueryType {
         return " ".join(clauses.join.map { arg in
             let (type, query, condition) = arg
             return " ".join([
-                Expression<Void>(literal: "\(type.rawValue) JOIN"),
+                SQLExpression<Void>(literal: "\(type.rawValue) JOIN"),
                 query.tableName(alias: true),
-                Expression<Void>(literal: "ON"),
+                SQLExpression<Void>(literal: "ON"),
                 condition
             ])
         })
@@ -537,7 +537,7 @@ extension QueryType {
         }
 
         return " ".join([
-            Expression<Void>(literal: "WHERE"),
+            SQLExpression<Void>(literal: "WHERE"),
             filters
         ])
     }
@@ -548,7 +548,7 @@ extension QueryType {
         }
 
         let groupByClause = " ".join([
-            Expression<Void>(literal: "GROUP BY"),
+            SQLExpression<Void>(literal: "GROUP BY"),
             ", ".join(group.by)
         ])
 
@@ -559,7 +559,7 @@ extension QueryType {
         return " ".join([
             groupByClause,
             " ".join([
-                Expression<Void>(literal: "HAVING"),
+                SQLExpression<Void>(literal: "HAVING"),
                 having
             ])
         ])
@@ -571,7 +571,7 @@ extension QueryType {
         }
 
         return " ".join([
-            Expression<Void>(literal: "ORDER BY"),
+            SQLExpression<Void>(literal: "ORDER BY"),
             ", ".join(clauses.order)
         ])
     }
@@ -581,7 +581,7 @@ extension QueryType {
             return nil
         }
 
-        let limitClause = Expression<Void>(literal: "LIMIT \(limit.length)")
+        let limitClause = SQLExpression<Void>(literal: "LIMIT \(limit.length)")
 
         guard let offset = limit.offset else {
             return limitClause
@@ -589,7 +589,7 @@ extension QueryType {
 
         return " ".join([
             limitClause,
-            Expression<Void>(literal: "OFFSET \(offset)")
+            SQLExpression<Void>(literal: "OFFSET \(offset)")
         ])
     }
 
@@ -600,7 +600,7 @@ extension QueryType {
 
         return " ".join(clauses.union.map { (all, query) in
             " ".join([
-                Expression<Void>(literal: all ? "UNION ALL" : "UNION"),
+                SQLExpression<Void>(literal: all ? "UNION ALL" : "UNION"),
                 query
             ])
         })
@@ -652,13 +652,13 @@ extension QueryType {
         }
 
         let clauses: [Expressible?] = [
-            Expression<Void>(literal: "INSERT"),
-            or.map { Expression<Void>(literal: "OR \($0.rawValue)") },
-            Expression<Void>(literal: "INTO"),
+            SQLExpression<Void>(literal: "INSERT"),
+            or.map { SQLExpression<Void>(literal: "OR \($0.rawValue)") },
+            SQLExpression<Void>(literal: "INTO"),
             tableName(),
-            "".wrap(insert.columns) as Expression<Void>,
-            Expression<Void>(literal: "VALUES"),
-            "".wrap(insert.values) as Expression<Void>,
+            "".wrap(insert.columns) as SQLExpression<Void>,
+            SQLExpression<Void>(literal: "VALUES"),
+            "".wrap(insert.values) as SQLExpression<Void>,
             whereClause
         ]
 
@@ -678,13 +678,13 @@ extension QueryType {
         }
 
         let clauses: [Expressible?] = [
-            Expression<Void>(literal: "INSERT"),
-            or.map { Expression<Void>(literal: "OR \($0.rawValue)") },
-            Expression<Void>(literal: "INTO"),
+            SQLExpression<Void>(literal: "INSERT"),
+            or.map { SQLExpression<Void>(literal: "OR \($0.rawValue)") },
+            SQLExpression<Void>(literal: "INTO"),
             tableName(),
-            "".wrap(columns) as Expression<Void>,
-            Expression<Void>(literal: "VALUES"),
-            ", ".join(insertValues.map({ "".wrap($0) as Expression<Void> })),
+            "".wrap(columns) as SQLExpression<Void>,
+            SQLExpression<Void>(literal: "VALUES"),
+            ", ".join(insertValues.map({ "".wrap($0) as SQLExpression<Void> })),
             whereClause
         ]
         return Insert(" ".join(clauses.compactMap { $0 }).expression)
@@ -693,9 +693,9 @@ extension QueryType {
     /// Runs an `INSERT` statement against the query with `DEFAULT VALUES`.
     public func insert() -> Insert {
         Insert(" ".join([
-            Expression<Void>(literal: "INSERT INTO"),
+            SQLExpression<Void>(literal: "INSERT INTO"),
             tableName(),
-            Expression<Void>(literal: "DEFAULT VALUES")
+            SQLExpression<Void>(literal: "DEFAULT VALUES")
         ]).expression)
     }
 
@@ -707,7 +707,7 @@ extension QueryType {
     /// - Returns: The number of updated rows and statement.
     public func insert(_ query: QueryType) -> Update {
         Update(" ".join([
-            Expression<Void>(literal: "INSERT INTO"),
+            SQLExpression<Void>(literal: "INSERT INTO"),
             tableName(),
             query.expression
        ]).expression)
@@ -735,16 +735,16 @@ extension QueryType {
         }
 
         let clauses: [Expressible?] = [
-            Expression<Void>(literal: "INSERT"),
-            Expression<Void>(literal: "INTO"),
+            SQLExpression<Void>(literal: "INSERT"),
+            SQLExpression<Void>(literal: "INTO"),
             tableName(),
-            "".wrap(insert.columns) as Expression<Void>,
-            Expression<Void>(literal: "VALUES"),
-            "".wrap(insert.values) as Expression<Void>,
+            "".wrap(insert.columns) as SQLExpression<Void>,
+            SQLExpression<Void>(literal: "VALUES"),
+            "".wrap(insert.values) as SQLExpression<Void>,
             whereClause,
-            Expression<Void>(literal: "ON CONFLICT"),
-            "".wrap(conflicting) as Expression<Void>,
-            Expression<Void>(literal: "DO UPDATE SET"),
+            SQLExpression<Void>(literal: "ON CONFLICT"),
+            "".wrap(conflicting) as SQLExpression<Void>,
+            SQLExpression<Void>(literal: "DO UPDATE SET"),
             ", ".join(setValues.map { $0.expression })
         ]
 
@@ -759,9 +759,9 @@ extension QueryType {
 
     public func update(_ values: [Setter]) -> Update {
         let clauses: [Expressible?] = [
-            Expression<Void>(literal: "UPDATE"),
+            SQLExpression<Void>(literal: "UPDATE"),
             tableName(),
-            Expression<Void>(literal: "SET"),
+            SQLExpression<Void>(literal: "SET"),
             ", ".join(values.map { " = ".join([$0.column, $0.value]) }),
             whereClause,
             orderClause,
@@ -775,7 +775,7 @@ extension QueryType {
 
     public func delete() -> Delete {
         let clauses: [Expressible?] = [
-            Expression<Void>(literal: "DELETE FROM"),
+            SQLExpression<Void>(literal: "DELETE FROM"),
             tableName(),
             whereClause,
             orderClause,
@@ -789,8 +789,8 @@ extension QueryType {
 
     public var exists: Select<Bool> {
         Select(" ".join([
-            Expression<Void>(literal: "SELECT EXISTS"),
-            "".wrap(expression) as Expression<Void>
+            SQLExpression<Void>(literal: "SELECT EXISTS"),
+            "".wrap(expression) as SQLExpression<Void>
         ]).expression)
     }
 
@@ -802,15 +802,15 @@ extension QueryType {
     ///
     /// - Returns: A column expression namespaced with the query’s table name or
     ///   alias.
-    public func namespace<V>(_ column: Expression<V>) -> Expression<V> {
-        Expression(".".join([tableName(), column]).expression)
+    public func namespace<V>(_ column: SQLExpression<V>) -> SQLExpression<V> {
+        SQLExpression(".".join([tableName(), column]).expression)
     }
 
-    public subscript<T>(column: Expression<T>) -> Expression<T> {
+    public subscript<T>(column: SQLExpression<T>) -> SQLExpression<T> {
         namespace(column)
     }
 
-    public subscript<T>(column: Expression<T?>) -> Expression<T?> {
+    public subscript<T>(column: SQLExpression<T?>) -> SQLExpression<T?> {
         namespace(column)
     }
 
@@ -820,7 +820,7 @@ extension QueryType {
     ///
     /// - Returns: A `*` expression namespaced with the query’s table name or
     ///   alias.
-    public subscript(star: Star) -> Expression<Void> {
+    public subscript(star: Star) -> SQLExpression<Void> {
         namespace(star(nil, nil))
     }
 
@@ -834,8 +834,8 @@ extension QueryType {
 
         return " ".join([
             database(namespace: clauses.from.name),
-            Expression<Void>(literal: "AS"),
-            Expression<Void>(alias)
+            SQLExpression<Void>(literal: "AS"),
+            SQLExpression<Void>(alias)
         ])
     }
 
@@ -843,20 +843,20 @@ extension QueryType {
         if qualified {
             return tableName()
         }
-        return Expression<Void>(clauses.from.alias ?? clauses.from.name)
+        return SQLExpression<Void>(clauses.from.alias ?? clauses.from.name)
     }
 
     func database(namespace name: String) -> Expressible {
-        let name = Expression<Void>(name)
+        let name = SQLExpression<Void>(name)
 
         guard let database = clauses.from.database else {
             return name
         }
 
-        return ".".join([Expression<Void>(database), name])
+        return ".".join([SQLExpression<Void>(database), name])
     }
 
-    public var expression: Expression<Void> {
+    public var expression: SQLExpression<Void> {
         let clauses: [Expressible?] = [
             withClause,
             selectClause,
@@ -1068,7 +1068,7 @@ extension Connection {
 
             if column == "*" {
                 var select = query
-                select.clauses.select = (false, [Expression<Void>(literal: "*") as Expressible])
+                select.clauses.select = (false, [SQLExpression<Void>(literal: "*") as Expressible])
                 let queries = [select] + query.clauses.join.map { $0.query }
                 if !namespace.isEmpty {
                     for q in queries where q.tableName().expression.template == namespace {
@@ -1191,15 +1191,15 @@ public struct Row {
     /// - Parameter column: An expression representing a column selected in a Query.
     ///
     /// - Returns: The value for the given column.
-    public func get<V: Value>(_ column: Expression<V>) throws -> V {
-        if let value = try get(Expression<V?>(column)) {
+    public func get<V: Value>(_ column: SQLExpression<V>) throws -> V {
+        if let value = try get(SQLExpression<V?>(column)) {
             return value
         } else {
             throw QueryError.unexpectedNullValue(name: column.template)
         }
     }
 
-    public func get<V: Value>(_ column: Expression<V?>) throws -> V? {
+    public func get<V: Value>(_ column: SQLExpression<V?>) throws -> V? {
         func valueAtIndex(_ idx: Int) throws -> V? {
             guard let value = values[idx] as? V.Datatype else { return nil }
             return try V.fromDatatypeValue(value) as? V
@@ -1230,12 +1230,12 @@ public struct Row {
         return try valueAtIndex(idx)
     }
 
-    public subscript<T: Value>(column: Expression<T>) -> T {
+    public subscript<T: Value>(column: SQLExpression<T>) -> T {
         // swiftlint:disable:next force_try
         try! get(column)
     }
 
-    public subscript<T: Value>(column: Expression<T?>) -> T? {
+    public subscript<T: Value>(column: SQLExpression<T?>) -> T? {
         // swiftlint:disable:next force_try
         try! get(column)
     }
@@ -1274,15 +1274,15 @@ public enum OnConflict: String {
 
 public struct QueryClauses {
 
-    var select = (distinct: false, columns: [Expression<Void>(literal: "*") as Expressible])
+    var select = (distinct: false, columns: [SQLExpression<Void>(literal: "*") as Expressible])
 
     var from: (name: String, alias: String?, database: String?)
 
     var join = [(type: JoinType, query: QueryType, condition: Expressible)]()
 
-    var filters: Expression<Bool?>?
+    var filters: SQLExpression<Bool?>?
 
-    var group: (by: [Expressible], having: Expression<Bool?>?)?
+    var group: (by: [Expressible], having: SQLExpression<Bool?>?)?
 
     var order = [Expressible]()
 

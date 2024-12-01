@@ -24,10 +24,10 @@ class SelectTests: SQLiteTestCase {
         let usersData = Table("users_name")
         let users = Table("users")
 
-        let name = Expression<String>("name")
-        let id = Expression<Int64>("id")
-        let userID = Expression<Int64>("user_id")
-        let email = Expression<String>("email")
+        let name = SQLExpression<String>("name")
+        let id = SQLExpression<Int64>("id")
+        let userID = SQLExpression<Int64>("user_id")
+        let email = SQLExpression<String>("email")
 
         try insertUser("Joey")
         try db.run(usersData.insert(

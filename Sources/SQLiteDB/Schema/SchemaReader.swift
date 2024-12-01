@@ -141,54 +141,54 @@ private enum SchemaTable {
     }
 
     // columns
-    static let typeColumn = Expression<String>("type")
-    static let nameColumn = Expression<String>("name")
-    static let tableNameColumn = Expression<String>("tbl_name")
-    static let rootPageColumn = Expression<Int64?>("rootpage")
-    static let sqlColumn = Expression<String?>("sql")
+    static let typeColumn = SQLExpression<String>("type")
+    static let nameColumn = SQLExpression<String>("name")
+    static let tableNameColumn = SQLExpression<String>("tbl_name")
+    static let rootPageColumn = SQLExpression<Int64?>("rootpage")
+    static let sqlColumn = SQLExpression<String?>("sql")
 }
 
 private enum TableInfoTable {
-    static let idColumn = Expression<Int64>("cid")
-    static let nameColumn = Expression<String>("name")
-    static let typeColumn = Expression<String>("type")
-    static let notNullColumn = Expression<Int64>("notnull")
-    static let defaultValueColumn = Expression<String?>("dflt_value")
-    static let primaryKeyColumn = Expression<Int64?>("pk")
+    static let idColumn = SQLExpression<Int64>("cid")
+    static let nameColumn = SQLExpression<String>("name")
+    static let typeColumn = SQLExpression<String>("type")
+    static let notNullColumn = SQLExpression<Int64>("notnull")
+    static let defaultValueColumn = SQLExpression<String?>("dflt_value")
+    static let primaryKeyColumn = SQLExpression<Int64?>("pk")
 }
 
 private enum IndexInfoTable {
     // The rank of the column within the index. (0 means left-most.)
-    static let seqnoColumn = Expression<Int64>("seqno")
+    static let seqnoColumn = SQLExpression<Int64>("seqno")
     // The rank of the column within the table being indexed.
     // A value of -1 means rowid and a value of -2 means that an expression is being used.
-    static let cidColumn = Expression<Int64>("cid")
+    static let cidColumn = SQLExpression<Int64>("cid")
     // The name of the column being indexed. This columns is NULL if the column is the rowid or an expression.
-    static let nameColumn = Expression<String?>("name")
+    static let nameColumn = SQLExpression<String?>("name")
 }
 
 private enum IndexListTable {
     // A sequence number assigned to each index for internal tracking purposes.
-    static let seqColumn = Expression<Int64>("seq")
+    static let seqColumn = SQLExpression<Int64>("seq")
     // The name of the index
-    static let nameColumn = Expression<String>("name")
+    static let nameColumn = SQLExpression<String>("name")
     // "1" if the index is UNIQUE and "0" if not.
-    static let uniqueColumn = Expression<Int64>("unique")
+    static let uniqueColumn = SQLExpression<Int64>("unique")
     // "c" if the index was created by a CREATE INDEX statement,
     // "u" if the index was created by a UNIQUE constraint, or
     // "pk" if the index was created by a PRIMARY KEY constraint.
-    static let originColumn = Expression<String>("origin")
+    static let originColumn = SQLExpression<String>("origin")
     // "1" if the index is a partial index and "0" if not.
-    static let partialColumn = Expression<Int64>("partial")
+    static let partialColumn = SQLExpression<Int64>("partial")
 }
 
 private enum ForeignKeyListTable {
-    static let idColumn = Expression<Int64>("id")
-    static let seqColumn = Expression<Int64>("seq")
-    static let tableColumn = Expression<String>("table")
-    static let fromColumn = Expression<String>("from")
-    static let toColumn = Expression<String?>("to") // when null, use primary key
-    static let onUpdateColumn = Expression<String>("on_update")
-    static let onDeleteColumn = Expression<String>("on_delete")
-    static let matchColumn = Expression<String>("match")
+    static let idColumn = SQLExpression<Int64>("id")
+    static let seqColumn = SQLExpression<Int64>("seq")
+    static let tableColumn = SQLExpression<String>("table")
+    static let fromColumn = SQLExpression<String>("from")
+    static let toColumn = SQLExpression<String?>("to") // when null, use primary key
+    static let onUpdateColumn = SQLExpression<String>("on_update")
+    static let onDeleteColumn = SQLExpression<String>("on_delete")
+    static let matchColumn = SQLExpression<String>("match")
 }

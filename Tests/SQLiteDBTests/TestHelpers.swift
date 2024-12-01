@@ -1,9 +1,6 @@
 import XCTest
 @testable import SQLiteDB
 
-// https://github.com/stephencelis/SQLite.swift/issues/1277
-typealias Expression = SQLiteDB.Expression
-
 class SQLiteTestCase: XCTestCase {
     private var trace: [String: Int]!
     var db: Connection!
@@ -77,29 +74,29 @@ class SQLiteTestCase: XCTestCase {
 
 }
 
-let bool = Expression<Bool>("bool")
-let boolOptional = Expression<Bool?>("boolOptional")
+let bool = SQLExpression<Bool>("bool")
+let boolOptional = SQLExpression<Bool?>("boolOptional")
 
-let data = Expression<Blob>("blob")
-let dataOptional = Expression<Blob?>("blobOptional")
+let data = SQLExpression<Blob>("blob")
+let dataOptional = SQLExpression<Blob?>("blobOptional")
 
-let date = Expression<Date>("date")
-let dateOptional = Expression<Date?>("dateOptional")
+let date = SQLExpression<Date>("date")
+let dateOptional = SQLExpression<Date?>("dateOptional")
 
-let double = Expression<Double>("double")
-let doubleOptional = Expression<Double?>("doubleOptional")
+let double = SQLExpression<Double>("double")
+let doubleOptional = SQLExpression<Double?>("doubleOptional")
 
-let int = Expression<Int>("int")
-let intOptional = Expression<Int?>("intOptional")
+let int = SQLExpression<Int>("int")
+let intOptional = SQLExpression<Int?>("intOptional")
 
-let int64 = Expression<Int64>("int64")
-let int64Optional = Expression<Int64?>("int64Optional")
+let int64 = SQLExpression<Int64>("int64")
+let int64Optional = SQLExpression<Int64?>("int64Optional")
 
-let string = Expression<String>("string")
-let stringOptional = Expression<String?>("stringOptional")
+let string = SQLExpression<String>("string")
+let stringOptional = SQLExpression<String?>("stringOptional")
 
-let uuid = Expression<UUID>("uuid")
-let uuidOptional = Expression<UUID?>("uuidOptional")
+let uuid = SQLExpression<UUID>("uuid")
+let uuidOptional = SQLExpression<UUID?>("uuidOptional")
 
 let testUUIDValue = UUID(uuidString: "E621E1F8-C36C-495A-93FC-0C247A3E6E5F")!
 

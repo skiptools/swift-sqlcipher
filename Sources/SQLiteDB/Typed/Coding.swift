@@ -191,34 +191,34 @@ private class SQLiteEncoder: Encoder {
         }
 
         func encodeNil(forKey key: SQLiteEncoder.SQLiteKeyedEncodingContainer<Key>.Key) throws {
-            encoder.setters.append(Expression<String?>(key.stringValue) <- nil)
+            encoder.setters.append(SQLExpression<String?>(key.stringValue) <- nil)
         }
 
         func encode(_ value: Int, forKey key: SQLiteEncoder.SQLiteKeyedEncodingContainer<Key>.Key) throws {
-            encoder.setters.append(Expression(key.stringValue) <- value)
+            encoder.setters.append(SQLExpression(key.stringValue) <- value)
         }
 
         func encode(_ value: Bool, forKey key: Key) throws {
-            encoder.setters.append(Expression(key.stringValue) <- value)
+            encoder.setters.append(SQLExpression(key.stringValue) <- value)
         }
 
         func encode(_ value: Float, forKey key: Key) throws {
-            encoder.setters.append(Expression(key.stringValue) <- Double(value))
+            encoder.setters.append(SQLExpression(key.stringValue) <- Double(value))
         }
 
         func encode(_ value: Double, forKey key: Key) throws {
-            encoder.setters.append(Expression(key.stringValue) <- value)
+            encoder.setters.append(SQLExpression(key.stringValue) <- value)
         }
 
         func encode(_ value: String, forKey key: Key) throws {
-            encoder.setters.append(Expression(key.stringValue) <- value)
+            encoder.setters.append(SQLExpression(key.stringValue) <- value)
         }
 
         func encodeIfPresent(_ value: Int?, forKey key: SQLiteEncoder.SQLiteKeyedEncodingContainer<Key>.Key) throws {
             if let value {
                 try encode(value, forKey: key)
             } else if forcingNilValueSetters {
-                encoder.setters.append(Expression<Int?>(key.stringValue) <- nil)
+                encoder.setters.append(SQLExpression<Int?>(key.stringValue) <- nil)
             }
         }
 
@@ -226,7 +226,7 @@ private class SQLiteEncoder: Encoder {
             if let value {
                 try encode(value, forKey: key)
             } else if forcingNilValueSetters {
-                encoder.setters.append(Expression<Bool?>(key.stringValue) <- nil)
+                encoder.setters.append(SQLExpression<Bool?>(key.stringValue) <- nil)
             }
         }
 
@@ -234,7 +234,7 @@ private class SQLiteEncoder: Encoder {
             if let value {
                 try encode(value, forKey: key)
             } else if forcingNilValueSetters {
-                encoder.setters.append(Expression<Double?>(key.stringValue) <- nil)
+                encoder.setters.append(SQLExpression<Double?>(key.stringValue) <- nil)
             }
         }
 
@@ -242,7 +242,7 @@ private class SQLiteEncoder: Encoder {
             if let value {
                 try encode(value, forKey: key)
             } else if forcingNilValueSetters {
-                encoder.setters.append(Expression<Double?>(key.stringValue) <- nil)
+                encoder.setters.append(SQLExpression<Double?>(key.stringValue) <- nil)
             }
         }
 
@@ -250,22 +250,22 @@ private class SQLiteEncoder: Encoder {
             if let value {
                 try encode(value, forKey: key)
             } else if forcingNilValueSetters {
-                encoder.setters.append(Expression<String?>(key.stringValue) <- nil)
+                encoder.setters.append(SQLExpression<String?>(key.stringValue) <- nil)
             }
         }
 
         func encode<T>(_ value: T, forKey key: Key) throws where T: Swift.Encodable {
             switch value {
             case let data as Data:
-                encoder.setters.append(Expression(key.stringValue) <- data)
+                encoder.setters.append(SQLExpression(key.stringValue) <- data)
             case let date as Date:
-                encoder.setters.append(Expression(key.stringValue) <- date.datatypeValue)
+                encoder.setters.append(SQLExpression(key.stringValue) <- date.datatypeValue)
             case let uuid as UUID:
-                encoder.setters.append(Expression(key.stringValue) <- uuid.datatypeValue)
+                encoder.setters.append(SQLExpression(key.stringValue) <- uuid.datatypeValue)
             default:
                 let encoded = try JSONEncoder().encode(value)
                 let string = String(data: encoded, encoding: .utf8)
-                encoder.setters.append(Expression(key.stringValue) <- string)
+                encoder.setters.append(SQLExpression(key.stringValue) <- string)
             }
         }
 
@@ -274,7 +274,7 @@ private class SQLiteEncoder: Encoder {
                 guard forcingNilValueSetters else {
                     return
                 }
-                encoder.setters.append(Expression<String?>(key.stringValue) <- nil)
+                encoder.setters.append(SQLExpression<String?>(key.stringValue) <- nil)
                 return
             }
             try encode(value, forKey: key)
@@ -296,7 +296,7 @@ private class SQLiteEncoder: Encoder {
         }
 
         func encode(_ value: Int64, forKey key: Key) throws {
-            encoder.setters.append(Expression(key.stringValue) <- value)
+            encoder.setters.append(SQLExpression(key.stringValue) <- value)
         }
 
         func encode(_ value: UInt, forKey key: Key) throws {
@@ -381,11 +381,11 @@ private class SQLiteDecoder: Decoder {
         }
 
         func decode(_ type: Bool.Type, forKey key: Key) throws -> Bool {
-            try row.get(Expression(key.stringValue))
+            try row.get(SQLExpression(key.stringValue))
         }
 
         func decode(_ type: Int.Type, forKey key: Key) throws -> Int {
-            try row.get(Expression(key.stringValue))
+            try row.get(SQLExpression(key.stringValue))
         }
 
         func decode(_ type: Int8.Type, forKey key: Key) throws -> Int8 {
@@ -404,7 +404,7 @@ private class SQLiteDecoder: Decoder {
         }
 
         func decode(_ type: Int64.Type, forKey key: Key) throws -> Int64 {
-            try row.get(Expression(key.stringValue))
+            try row.get(SQLExpression(key.stringValue))
         }
 
         func decode(_ type: UInt.Type, forKey key: Key) throws -> UInt {
@@ -434,32 +434,32 @@ private class SQLiteDecoder: Decoder {
         }
 
         func decode(_ type: Float.Type, forKey key: Key) throws -> Float {
-            Float(try row.get(Expression<Double>(key.stringValue)))
+            Float(try row.get(SQLExpression<Double>(key.stringValue)))
         }
 
         func decode(_ type: Double.Type, forKey key: Key) throws -> Double {
-            try row.get(Expression(key.stringValue))
+            try row.get(SQLExpression(key.stringValue))
         }
 
         func decode(_ type: String.Type, forKey key: Key) throws -> String {
-            try row.get(Expression(key.stringValue))
+            try row.get(SQLExpression(key.stringValue))
         }
 
         func decode<T>(_ type: T.Type, forKey key: Key) throws -> T where T: Swift.Decodable {
             // swiftlint:disable force_cast
             switch type {
             case is Data.Type:
-                let data = try row.get(Expression<Data>(key.stringValue))
+                let data = try row.get(SQLExpression<Data>(key.stringValue))
                 return data as! T
             case is Date.Type:
-                let date = try row.get(Expression<Date>(key.stringValue))
+                let date = try row.get(SQLExpression<Date>(key.stringValue))
                 return date as! T
             case is UUID.Type:
-                let uuid = try row.get(Expression<UUID>(key.stringValue))
+                let uuid = try row.get(SQLExpression<UUID>(key.stringValue))
                 return uuid as! T
             default:
                 // swiftlint:enable force_cast
-                guard let JSONString = try row.get(Expression<String?>(key.stringValue)) else {
+                guard let JSONString = try row.get(SQLExpression<String?>(key.stringValue)) else {
                     throw DecodingError.typeMismatch(type, DecodingError.Context(codingPath: codingPath,
                                                                                  debugDescription: "an unsupported type was found"))
                 }
@@ -472,39 +472,39 @@ private class SQLiteDecoder: Decoder {
         }
 
         func decodeIfPresent(_ type: Bool.Type, forKey key: Key) throws -> Bool? {
-            try? row.get(Expression(key.stringValue))
+            try? row.get(SQLExpression(key.stringValue))
         }
 
         func decodeIfPresent(_ type: Int.Type, forKey key: Key) throws -> Int? {
-            try? row.get(Expression(key.stringValue))
+            try? row.get(SQLExpression(key.stringValue))
         }
 
         func decodeIfPresent(_ type: Int64.Type, forKey key: Key) throws -> Int64? {
-            try? row.get(Expression(key.stringValue))
+            try? row.get(SQLExpression(key.stringValue))
         }
 
         func decodeIfPresent(_ type: Float.Type, forKey key: Key) throws -> Float? {
-            try? Float(row.get(Expression<Double>(key.stringValue)))
+            try? Float(row.get(SQLExpression<Double>(key.stringValue)))
         }
 
         func decodeIfPresent(_ type: Double.Type, forKey key: Key) throws -> Double? {
-            try? row.get(Expression(key.stringValue))
+            try? row.get(SQLExpression(key.stringValue))
         }
 
         func decodeIfPresent(_ type: String.Type, forKey key: Key) throws -> String? {
-            try? row.get(Expression(key.stringValue))
+            try? row.get(SQLExpression(key.stringValue))
         }
 
         func decodeIfPresent<T>(_ type: T.Type, forKey key: Key) throws -> T? where T: Swift.Decodable {
             switch type {
             case is Data.Type:
-                return try? row.get(Expression<Data>(key.stringValue)) as? T
+                return try? row.get(SQLExpression<Data>(key.stringValue)) as? T
             case is Date.Type:
-                return try? row.get(Expression<Date>(key.stringValue)) as? T
+                return try? row.get(SQLExpression<Date>(key.stringValue)) as? T
             case is UUID.Type:
-                return try? row.get(Expression<UUID>(key.stringValue)) as? T
+                return try? row.get(SQLExpression<UUID>(key.stringValue)) as? T
             default:
-                guard let JSONString = try row.get(Expression<String?>(key.stringValue)) else {
+                guard let JSONString = try row.get(SQLExpression<String?>(key.stringValue)) else {
                     return nil
                 }
                 guard let data = JSONString.data(using: .utf8) else {

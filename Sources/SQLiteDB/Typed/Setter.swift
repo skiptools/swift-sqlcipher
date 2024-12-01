@@ -35,33 +35,33 @@ public struct Setter {
     let column: Expressible
     let value: Expressible
 
-    fileprivate init<V: Value>(column: Expression<V>, value: Expression<V>) {
+    fileprivate init<V: Value>(column: SQLExpression<V>, value: SQLExpression<V>) {
         self.column = column
         self.value = value
     }
 
-    fileprivate init<V: Value>(column: Expression<V>, value: V) {
+    fileprivate init<V: Value>(column: SQLExpression<V>, value: V) {
         self.column = column
         self.value = value
     }
 
-    fileprivate init<V: Value>(column: Expression<V?>, value: Expression<V>) {
+    fileprivate init<V: Value>(column: SQLExpression<V?>, value: SQLExpression<V>) {
         self.column = column
         self.value = value
     }
 
-    fileprivate init<V: Value>(column: Expression<V?>, value: Expression<V?>) {
+    fileprivate init<V: Value>(column: SQLExpression<V?>, value: SQLExpression<V?>) {
         self.column = column
         self.value = value
     }
 
-    fileprivate init<V: Value>(column: Expression<V?>, value: V?) {
+    fileprivate init<V: Value>(column: SQLExpression<V?>, value: V?) {
         self.column = column
-        self.value = Expression<V?>(value: value)
+        self.value = SQLExpression<V?>(value: value)
     }
 
     init(excluded column: Expressible) {
-        let excluded = Expression<Void>("excluded")
+        let excluded = SQLExpression<Void>("excluded")
         self.column = column
         value = ".".join([excluded, column.expression])
     }
@@ -69,214 +69,214 @@ public struct Setter {
 
 extension Setter: Expressible {
 
-    public var expression: Expression<Void> {
+    public var expression: SQLExpression<Void> {
         "=".infix(column, value, wrap: false)
     }
 
 }
 
-public func <-<V: Value>(column: Expression<V>, value: Expression<V>) -> Setter {
+public func <-<V: Value>(column: SQLExpression<V>, value: SQLExpression<V>) -> Setter {
     Setter(column: column, value: value)
 }
-public func <-<V: Value>(column: Expression<V>, value: V) -> Setter {
+public func <-<V: Value>(column: SQLExpression<V>, value: V) -> Setter {
     Setter(column: column, value: value)
 }
-public func <-<V: Value>(column: Expression<V?>, value: Expression<V>) -> Setter {
+public func <-<V: Value>(column: SQLExpression<V?>, value: SQLExpression<V>) -> Setter {
     Setter(column: column, value: value)
 }
-public func <-<V: Value>(column: Expression<V?>, value: Expression<V?>) -> Setter {
+public func <-<V: Value>(column: SQLExpression<V?>, value: SQLExpression<V?>) -> Setter {
     Setter(column: column, value: value)
 }
-public func <-<V: Value>(column: Expression<V?>, value: V?) -> Setter {
+public func <-<V: Value>(column: SQLExpression<V?>, value: V?) -> Setter {
     Setter(column: column, value: value)
 }
 
-public func +=(column: Expression<String>, value: Expression<String>) -> Setter {
+public func +=(column: SQLExpression<String>, value: SQLExpression<String>) -> Setter {
     column <- column + value
 }
-public func +=(column: Expression<String>, value: String) -> Setter {
+public func +=(column: SQLExpression<String>, value: String) -> Setter {
     column <- column + value
 }
-public func +=(column: Expression<String?>, value: Expression<String>) -> Setter {
+public func +=(column: SQLExpression<String?>, value: SQLExpression<String>) -> Setter {
     column <- column + value
 }
-public func +=(column: Expression<String?>, value: Expression<String?>) -> Setter {
+public func +=(column: SQLExpression<String?>, value: SQLExpression<String?>) -> Setter {
     column <- column + value
 }
-public func +=(column: Expression<String?>, value: String) -> Setter {
-    column <- column + value
-}
-
-public func +=<V: Value>(column: Expression<V>, value: Expression<V>) -> Setter where V.Datatype: Number {
-    column <- column + value
-}
-public func +=<V: Value>(column: Expression<V>, value: V) -> Setter where V.Datatype: Number {
-    column <- column + value
-}
-public func +=<V: Value>(column: Expression<V?>, value: Expression<V>) -> Setter where V.Datatype: Number {
-    column <- column + value
-}
-public func +=<V: Value>(column: Expression<V?>, value: Expression<V?>) -> Setter where V.Datatype: Number {
-    column <- column + value
-}
-public func +=<V: Value>(column: Expression<V?>, value: V) -> Setter where V.Datatype: Number {
+public func +=(column: SQLExpression<String?>, value: String) -> Setter {
     column <- column + value
 }
 
-public func -=<V: Value>(column: Expression<V>, value: Expression<V>) -> Setter where V.Datatype: Number {
+public func +=<V: Value>(column: SQLExpression<V>, value: SQLExpression<V>) -> Setter where V.Datatype: Number {
+    column <- column + value
+}
+public func +=<V: Value>(column: SQLExpression<V>, value: V) -> Setter where V.Datatype: Number {
+    column <- column + value
+}
+public func +=<V: Value>(column: SQLExpression<V?>, value: SQLExpression<V>) -> Setter where V.Datatype: Number {
+    column <- column + value
+}
+public func +=<V: Value>(column: SQLExpression<V?>, value: SQLExpression<V?>) -> Setter where V.Datatype: Number {
+    column <- column + value
+}
+public func +=<V: Value>(column: SQLExpression<V?>, value: V) -> Setter where V.Datatype: Number {
+    column <- column + value
+}
+
+public func -=<V: Value>(column: SQLExpression<V>, value: SQLExpression<V>) -> Setter where V.Datatype: Number {
     column <- column - value
 }
-public func -=<V: Value>(column: Expression<V>, value: V) -> Setter where V.Datatype: Number {
+public func -=<V: Value>(column: SQLExpression<V>, value: V) -> Setter where V.Datatype: Number {
     column <- column - value
 }
-public func -=<V: Value>(column: Expression<V?>, value: Expression<V>) -> Setter where V.Datatype: Number {
+public func -=<V: Value>(column: SQLExpression<V?>, value: SQLExpression<V>) -> Setter where V.Datatype: Number {
     column <- column - value
 }
-public func -=<V: Value>(column: Expression<V?>, value: Expression<V?>) -> Setter where V.Datatype: Number {
+public func -=<V: Value>(column: SQLExpression<V?>, value: SQLExpression<V?>) -> Setter where V.Datatype: Number {
     column <- column - value
 }
-public func -=<V: Value>(column: Expression<V?>, value: V) -> Setter where V.Datatype: Number {
+public func -=<V: Value>(column: SQLExpression<V?>, value: V) -> Setter where V.Datatype: Number {
     column <- column - value
 }
 
-public func *=<V: Value>(column: Expression<V>, value: Expression<V>) -> Setter where V.Datatype: Number {
+public func *=<V: Value>(column: SQLExpression<V>, value: SQLExpression<V>) -> Setter where V.Datatype: Number {
     column <- column * value
 }
-public func *=<V: Value>(column: Expression<V>, value: V) -> Setter where V.Datatype: Number {
+public func *=<V: Value>(column: SQLExpression<V>, value: V) -> Setter where V.Datatype: Number {
     column <- column * value
 }
-public func *=<V: Value>(column: Expression<V?>, value: Expression<V>) -> Setter where V.Datatype: Number {
+public func *=<V: Value>(column: SQLExpression<V?>, value: SQLExpression<V>) -> Setter where V.Datatype: Number {
     column <- column * value
 }
-public func *=<V: Value>(column: Expression<V?>, value: Expression<V?>) -> Setter where V.Datatype: Number {
+public func *=<V: Value>(column: SQLExpression<V?>, value: SQLExpression<V?>) -> Setter where V.Datatype: Number {
     column <- column * value
 }
-public func *=<V: Value>(column: Expression<V?>, value: V) -> Setter where V.Datatype: Number {
+public func *=<V: Value>(column: SQLExpression<V?>, value: V) -> Setter where V.Datatype: Number {
     column <- column * value
 }
 
-public func /=<V: Value>(column: Expression<V>, value: Expression<V>) -> Setter where V.Datatype: Number {
+public func /=<V: Value>(column: SQLExpression<V>, value: SQLExpression<V>) -> Setter where V.Datatype: Number {
     column <- column / value
 }
-public func /=<V: Value>(column: Expression<V>, value: V) -> Setter where V.Datatype: Number {
+public func /=<V: Value>(column: SQLExpression<V>, value: V) -> Setter where V.Datatype: Number {
     column <- column / value
 }
-public func /=<V: Value>(column: Expression<V?>, value: Expression<V>) -> Setter where V.Datatype: Number {
+public func /=<V: Value>(column: SQLExpression<V?>, value: SQLExpression<V>) -> Setter where V.Datatype: Number {
     column <- column / value
 }
-public func /=<V: Value>(column: Expression<V?>, value: Expression<V?>) -> Setter where V.Datatype: Number {
+public func /=<V: Value>(column: SQLExpression<V?>, value: SQLExpression<V?>) -> Setter where V.Datatype: Number {
     column <- column / value
 }
-public func /=<V: Value>(column: Expression<V?>, value: V) -> Setter where V.Datatype: Number {
+public func /=<V: Value>(column: SQLExpression<V?>, value: V) -> Setter where V.Datatype: Number {
     column <- column / value
 }
 
-public func %=<V: Value>(column: Expression<V>, value: Expression<V>) -> Setter where V.Datatype == Int64 {
+public func %=<V: Value>(column: SQLExpression<V>, value: SQLExpression<V>) -> Setter where V.Datatype == Int64 {
     column <- column % value
 }
-public func %=<V: Value>(column: Expression<V>, value: V) -> Setter where V.Datatype == Int64 {
+public func %=<V: Value>(column: SQLExpression<V>, value: V) -> Setter where V.Datatype == Int64 {
     column <- column % value
 }
-public func %=<V: Value>(column: Expression<V?>, value: Expression<V>) -> Setter where V.Datatype == Int64 {
+public func %=<V: Value>(column: SQLExpression<V?>, value: SQLExpression<V>) -> Setter where V.Datatype == Int64 {
     column <- column % value
 }
-public func %=<V: Value>(column: Expression<V?>, value: Expression<V?>) -> Setter where V.Datatype == Int64 {
+public func %=<V: Value>(column: SQLExpression<V?>, value: SQLExpression<V?>) -> Setter where V.Datatype == Int64 {
     column <- column % value
 }
-public func %=<V: Value>(column: Expression<V?>, value: V) -> Setter where V.Datatype == Int64 {
+public func %=<V: Value>(column: SQLExpression<V?>, value: V) -> Setter where V.Datatype == Int64 {
     column <- column % value
 }
 
-public func <<=<V: Value>(column: Expression<V>, value: Expression<V>) -> Setter where V.Datatype == Int64 {
+public func <<=<V: Value>(column: SQLExpression<V>, value: SQLExpression<V>) -> Setter where V.Datatype == Int64 {
     column <- column << value
 }
-public func <<=<V: Value>(column: Expression<V>, value: V) -> Setter where V.Datatype == Int64 {
+public func <<=<V: Value>(column: SQLExpression<V>, value: V) -> Setter where V.Datatype == Int64 {
     column <- column << value
 }
-public func <<=<V: Value>(column: Expression<V?>, value: Expression<V>) -> Setter where V.Datatype == Int64 {
+public func <<=<V: Value>(column: SQLExpression<V?>, value: SQLExpression<V>) -> Setter where V.Datatype == Int64 {
     column <- column << value
 }
-public func <<=<V: Value>(column: Expression<V?>, value: Expression<V?>) -> Setter where V.Datatype == Int64 {
+public func <<=<V: Value>(column: SQLExpression<V?>, value: SQLExpression<V?>) -> Setter where V.Datatype == Int64 {
     column <- column << value
 }
-public func <<=<V: Value>(column: Expression<V?>, value: V) -> Setter where V.Datatype == Int64 {
+public func <<=<V: Value>(column: SQLExpression<V?>, value: V) -> Setter where V.Datatype == Int64 {
     column <- column << value
 }
 
-public func >>=<V: Value>(column: Expression<V>, value: Expression<V>) -> Setter where V.Datatype == Int64 {
+public func >>=<V: Value>(column: SQLExpression<V>, value: SQLExpression<V>) -> Setter where V.Datatype == Int64 {
     column <- column >> value
 }
-public func >>=<V: Value>(column: Expression<V>, value: V) -> Setter where V.Datatype == Int64 {
+public func >>=<V: Value>(column: SQLExpression<V>, value: V) -> Setter where V.Datatype == Int64 {
     column <- column >> value
 }
-public func >>=<V: Value>(column: Expression<V?>, value: Expression<V>) -> Setter where V.Datatype == Int64 {
+public func >>=<V: Value>(column: SQLExpression<V?>, value: SQLExpression<V>) -> Setter where V.Datatype == Int64 {
     column <- column >> value
 }
-public func >>=<V: Value>(column: Expression<V?>, value: Expression<V?>) -> Setter where V.Datatype == Int64 {
+public func >>=<V: Value>(column: SQLExpression<V?>, value: SQLExpression<V?>) -> Setter where V.Datatype == Int64 {
     column <- column >> value
 }
-public func >>=<V: Value>(column: Expression<V?>, value: V) -> Setter where V.Datatype == Int64 {
+public func >>=<V: Value>(column: SQLExpression<V?>, value: V) -> Setter where V.Datatype == Int64 {
     column <- column >> value
 }
 
-public func &=<V: Value>(column: Expression<V>, value: Expression<V>) -> Setter where V.Datatype == Int64 {
+public func &=<V: Value>(column: SQLExpression<V>, value: SQLExpression<V>) -> Setter where V.Datatype == Int64 {
     column <- column & value
 }
-public func &=<V: Value>(column: Expression<V>, value: V) -> Setter where V.Datatype == Int64 {
+public func &=<V: Value>(column: SQLExpression<V>, value: V) -> Setter where V.Datatype == Int64 {
     column <- column & value
 }
-public func &=<V: Value>(column: Expression<V?>, value: Expression<V>) -> Setter where V.Datatype == Int64 {
+public func &=<V: Value>(column: SQLExpression<V?>, value: SQLExpression<V>) -> Setter where V.Datatype == Int64 {
     column <- column & value
 }
-public func &=<V: Value>(column: Expression<V?>, value: Expression<V?>) -> Setter where V.Datatype == Int64 {
+public func &=<V: Value>(column: SQLExpression<V?>, value: SQLExpression<V?>) -> Setter where V.Datatype == Int64 {
     column <- column & value
 }
-public func &=<V: Value>(column: Expression<V?>, value: V) -> Setter where V.Datatype == Int64 {
+public func &=<V: Value>(column: SQLExpression<V?>, value: V) -> Setter where V.Datatype == Int64 {
     column <- column & value
 }
 
-public func |=<V: Value>(column: Expression<V>, value: Expression<V>) -> Setter where V.Datatype == Int64 {
+public func |=<V: Value>(column: SQLExpression<V>, value: SQLExpression<V>) -> Setter where V.Datatype == Int64 {
     column <- column | value
 }
-public func |=<V: Value>(column: Expression<V>, value: V) -> Setter where V.Datatype == Int64 {
+public func |=<V: Value>(column: SQLExpression<V>, value: V) -> Setter where V.Datatype == Int64 {
     column <- column | value
 }
-public func |=<V: Value>(column: Expression<V?>, value: Expression<V>) -> Setter where V.Datatype == Int64 {
+public func |=<V: Value>(column: SQLExpression<V?>, value: SQLExpression<V>) -> Setter where V.Datatype == Int64 {
     column <- column | value
 }
-public func |=<V: Value>(column: Expression<V?>, value: Expression<V?>) -> Setter where V.Datatype == Int64 {
+public func |=<V: Value>(column: SQLExpression<V?>, value: SQLExpression<V?>) -> Setter where V.Datatype == Int64 {
     column <- column | value
 }
-public func |=<V: Value>(column: Expression<V?>, value: V) -> Setter where V.Datatype == Int64 {
+public func |=<V: Value>(column: SQLExpression<V?>, value: V) -> Setter where V.Datatype == Int64 {
     column <- column | value
 }
 
-public func ^=<V: Value>(column: Expression<V>, value: Expression<V>) -> Setter where V.Datatype == Int64 {
+public func ^=<V: Value>(column: SQLExpression<V>, value: SQLExpression<V>) -> Setter where V.Datatype == Int64 {
     column <- column ^ value
 }
-public func ^=<V: Value>(column: Expression<V>, value: V) -> Setter where V.Datatype == Int64 {
+public func ^=<V: Value>(column: SQLExpression<V>, value: V) -> Setter where V.Datatype == Int64 {
     column <- column ^ value
 }
-public func ^=<V: Value>(column: Expression<V?>, value: Expression<V>) -> Setter where V.Datatype == Int64 {
+public func ^=<V: Value>(column: SQLExpression<V?>, value: SQLExpression<V>) -> Setter where V.Datatype == Int64 {
     column <- column ^ value
 }
-public func ^=<V: Value>(column: Expression<V?>, value: Expression<V?>) -> Setter where V.Datatype == Int64 {
+public func ^=<V: Value>(column: SQLExpression<V?>, value: SQLExpression<V?>) -> Setter where V.Datatype == Int64 {
     column <- column ^ value
 }
-public func ^=<V: Value>(column: Expression<V?>, value: V) -> Setter where V.Datatype == Int64 {
+public func ^=<V: Value>(column: SQLExpression<V?>, value: V) -> Setter where V.Datatype == Int64 {
     column <- column ^ value
 }
 
-public postfix func ++<V: Value>(column: Expression<V>) -> Setter where V.Datatype == Int64 {
-    Expression<Int>(column) += 1
+public postfix func ++<V: Value>(column: SQLExpression<V>) -> Setter where V.Datatype == Int64 {
+    SQLExpression<Int>(column) += 1
 }
-public postfix func ++<V: Value>(column: Expression<V?>) -> Setter where V.Datatype == Int64 {
-    Expression<Int>(column) += 1
+public postfix func ++<V: Value>(column: SQLExpression<V?>) -> Setter where V.Datatype == Int64 {
+    SQLExpression<Int>(column) += 1
 }
 
-public postfix func --<V: Value>(column: Expression<V>) -> Setter where V.Datatype == Int64 {
-    Expression<Int>(column) -= 1
+public postfix func --<V: Value>(column: SQLExpression<V>) -> Setter where V.Datatype == Int64 {
+    SQLExpression<Int>(column) -= 1
 }
-public postfix func --<V: Value>(column: Expression<V?>) -> Setter where V.Datatype == Int64 {
-    Expression<Int>(column) -= 1
+public postfix func --<V: Value>(column: SQLExpression<V?>) -> Setter where V.Datatype == Int64 {
+    SQLExpression<Int>(column) -= 1
 }

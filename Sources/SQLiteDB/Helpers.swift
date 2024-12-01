@@ -32,10 +32,10 @@ import CSQLite
 import SQLite3
 #endif
 
-public typealias Star = (Expression<Binding>?, Expression<Binding>?) -> Expression<Void>
+public typealias Star = (SQLExpression<Binding>?, SQLExpression<Binding>?) -> SQLExpression<Void>
 
-public func *(_: Expression<Binding>?, _: Expression<Binding>?) -> Expression<Void> {
-    Expression(literal: "*")
+public func *(_: SQLExpression<Binding>?, _: SQLExpression<Binding>?) -> SQLExpression<Void> {
+    SQLExpression(literal: "*")
 }
 
 // swiftlint:disable:next type_name
@@ -75,15 +75,15 @@ extension String {
             template.append(expression.template)
             bindings.append(contentsOf: expression.bindings)
         }
-        return Expression<Void>(template.joined(separator: self), bindings)
+        return SQLExpression<Void>(template.joined(separator: self), bindings)
     }
 
-    func infix<T>(_ lhs: Expressible, _ rhs: Expressible, wrap: Bool = true) -> Expression<T> {
+    func infix<T>(_ lhs: Expressible, _ rhs: Expressible, wrap: Bool = true) -> SQLExpression<T> {
         infix([lhs, rhs], wrap: wrap)
     }
 
-    func infix<T>(_ terms: [Expressible], wrap: Bool = true) -> Expression<T> {
-        let expression = Expression<T>(" \(self) ".join(terms).expression)
+    func infix<T>(_ terms: [Expressible], wrap: Bool = true) -> SQLExpression<T> {
+        let expression = SQLExpression<T>(" \(self) ".join(terms).expression)
         guard wrap else {
             return expression
         }
@@ -91,18 +91,18 @@ extension String {
     }
 
     func prefix(_ expressions: Expressible) -> Expressible {
-        "\(self) ".wrap(expressions) as Expression<Void>
+        "\(self) ".wrap(expressions) as SQLExpression<Void>
     }
 
     func prefix(_ expressions: [Expressible]) -> Expressible {
-        "\(self) ".wrap(expressions) as Expression<Void>
+        "\(self) ".wrap(expressions) as SQLExpression<Void>
     }
 
-    func wrap<T>(_ expression: Expressible) -> Expression<T> {
-        Expression("\(self)(\(expression.expression.template))", expression.expression.bindings)
+    func wrap<T>(_ expression: Expressible) -> SQLExpression<T> {
+        SQLExpression("\(self)(\(expression.expression.template))", expression.expression.bindings)
     }
 
-    func wrap<T>(_ expressions: [Expressible]) -> Expression<T> {
+    func wrap<T>(_ expressions: [Expressible]) -> SQLExpression<T> {
         wrap(", ".join(expressions))
     }
 
