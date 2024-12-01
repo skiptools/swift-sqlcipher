@@ -61,7 +61,8 @@ let package = Package(
                 .define("SQLITE_TEMP_STORE", to: "2"),
                 .define("HAVE_GETHOSTUUID", to: "0"),
                 .define("SQLCIPHER_CRYPTO_LIBTOMCRYPT"),
-            ]),
+            ],
+            linkerSettings: [.linkedLibrary("log", .when(platforms: [.android]))]),
         .testTarget(
             name: "SQLiteDBTests",
             dependencies: ["SQLiteDB"],
