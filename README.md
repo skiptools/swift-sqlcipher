@@ -8,9 +8,9 @@ and works out-of-the-box on macOS, iOS, Linux, Android, and Windows.
 ## Features
 
  - A pure-Swift interface
+ - Embeds a modern and consistent sqlite (3.46.1) and sqlcipher (4.6.1) build in the library
  - A type-safe, optional-aware SQL expression builder
  - A flexible, chainable, lazy-executing query layer
- - Embeds a modern and consistent sqlite (3.44.2) build with the library
  - Automatically-typed data access
  - A lightweight, uncomplicated query and parameter binding interface
  - Developer-friendly error handling and debugging
