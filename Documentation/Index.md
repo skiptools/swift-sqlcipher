@@ -138,50 +138,14 @@ let db = try Connection("path/to/db.sqlite3")
 
 #### Read-Write Databases
 
-On iOS, you can create a writable database in your app’s **Documents**
+You can create a writable database in your app’s **Application Support**
 directory.
 
 ```swift
-let path = NSSearchPathForDirectoriesInDomains(
-    .documentDirectory, .userDomainMask, true
-).first!
-
-let db = try Connection("\(path)/db.sqlite3")
-```
-
-If you have bundled it in your application, you can use FileManager to copy it to the Documents directory:
-
-```swift
-func copyDatabaseIfNeeded(sourcePath: String) -> Bool {
-    let documents = NSSearchPathForDirectoriesInDomains(.documentDirectory, .userDomainMask, true).first!
-    let destinationPath = documents + "/db.sqlite3"
-    let exists = FileManager.default.fileExists(atPath: destinationPath)
-    guard !exists else { return false }
-    do {
-        try FileManager.default.copyItem(atPath: sourcePath, toPath: destinationPath)
-        return true
-    } catch {
-      print("error during file copy: \(error)")
-	    return false
-    }
-}
-```
-
-On macOS, you can use your app’s **Application Support** directory:
-
-
-```swift
-// set the path corresponding to application support
-var path = NSSearchPathForDirectoriesInDomains(
-    .applicationSupportDirectory, .userDomainMask, true
-).first! + "/" + Bundle.main.bundleIdentifier!
-
+let path = URL.applicationSupportDirectory
 // create parent directory inside application support if it doesn’t exist
-try FileManager.default.createDirectory(
-atPath: path, withIntermediateDirectories: true, attributes: nil
-)
-
-let db = try Connection("\(path)/db.sqlite3")
+try FileManager.default.createDirectory(atPath: path, withIntermediateDirectories: true, attributes: nil)
+let db = try Connection(dbURL.appendingPathComponent("db.sqlite3").path)
 ```
 
 #### Read-Only Databases
@@ -201,12 +165,6 @@ let db = try Connection(path, readonly: true)
 > it to a writable location _before_ establishing a connection (see
 > [Read-Write Databases](#read-write-databases), above, for typical, writable
 > locations).
->
-> See these two Stack Overflow questions for more information about iOS apps
-> with SQLite databases: [1](https://stackoverflow.com/questions/34609746/what-different-between-store-database-in-different-locations-in-ios),
-> [2](https://stackoverflow.com/questions/34614968/ios-how-to-copy-pre-seeded-database-at-the-first-running-app-with-sqlite-swift).
-> We welcome changes to the above sample code to show how to successfully copy and use a bundled "seed"
-> database for writing in an app.
 
 #### In a shared group container
 
