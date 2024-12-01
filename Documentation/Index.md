@@ -232,16 +232,16 @@ SQLiteDB comes with a typed expression layer that directly maps
 [Swift types](https://developer.apple.com/library/prerelease/ios/documentation/General/Reference/SwiftStandardLibraryReference/)
 to their [SQLite counterparts](https://www.sqlite.org/datatype3.html).
 
-| Swift Type      | SQLite Type |
-| --------------- | ----------- |
-| `Int64`*        | `INTEGER`   |
-| `Double`        | `REAL`      |
-| `String`        | `TEXT`      |
-| `nil`           | `NULL`      |
-| `SQLite.Blob`†  | `BLOB`      |
-| `URL`           | `TEXT`      |
-| `UUID`          | `TEXT`      |
-| `Date`          | `TEXT`      |
+| Swift Type        | SQLite Type |
+| ----------------- | ----------- |
+| `Int64`*          | `INTEGER`   |
+| `Double`          | `REAL`      |
+| `String`          | `TEXT`      |
+| `nil`             | `NULL`      |
+| `SQLiteDB.Blob`†  | `BLOB`      |
+| `URL`             | `TEXT`      |
+| `UUID`            | `TEXT`      |
+| `Date`            | `TEXT`      |
 
 > *While `Int64` is the basic, raw type (to preserve 64-bit integers on
 > 32-bit platforms), `Int` and `Bool` work transparently.

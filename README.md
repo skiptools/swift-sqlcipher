@@ -10,22 +10,22 @@ and works out-of-the-box on macOS, iOS, Linux, Android, and Windows.
  - A pure-Swift interface
  - A type-safe, optional-aware SQL expression builder
  - A flexible, chainable, lazy-executing query layer
- - Uses a built-in, modern sqlite version
+ - Embeds a modern and consistent sqlite (3.44.2) build with the library
  - Automatically-typed data access
  - A lightweight, uncomplicated query and parameter binding interface
  - Developer-friendly error handling and debugging
  - [Full-text search][] support
  - [Well-documented][See Documentation]
  - Extensively tested
- - [SQLCipher][] support
+ - [SQLCipher][] support using the embedded [LibTomCrypt][] library
  - [Schema query/migration][]
  - Works on iOS, macOS, Android, Windows, and Linux
 
 [SQLCipher]: https://www.zetetic.net/sqlcipher/
+[LibTomCrypt]: http://www.libtom.net/LibTomCrypt/
 [Full-text search]: Documentation/Index.md#full-text-search
 [Schema query/migration]: Documentation/Index.md#querying-the-schema
 [See Documentation]: Documentation/Index.md#sqliteswift-documentation
-
 
 ## Usage
 
