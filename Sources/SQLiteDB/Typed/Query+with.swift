@@ -28,8 +28,8 @@ extension QueryType {
     /// Sets a `WITH` clause on the query.
     ///
     ///     let users = Table("users")
-    ///     let id = Expression<String>("email")
-    ///     let name = Expression<String?>("name")
+    ///     let id = SQLExpression<String>("email")
+    ///     let name = SQLExpression<String?>("name")
     ///
     ///     let userNames = Table("user_names")
     ///     userCategories.with(userNames, as: users.select(name))

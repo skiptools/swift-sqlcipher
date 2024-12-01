@@ -10,6 +10,7 @@ and works out-of-the-box on macOS, iOS, Linux, Android, and Windows.
  - A pure-Swift interface
  - A type-safe, optional-aware SQL expression builder
  - A flexible, chainable, lazy-executing query layer
+ - Uses a built-in, modern sqlite version
  - Automatically-typed data access
  - A lightweight, uncomplicated query and parameter binding interface
  - Developer-friendly error handling and debugging
@@ -18,7 +19,7 @@ and works out-of-the-box on macOS, iOS, Linux, Android, and Windows.
  - Extensively tested
  - [SQLCipher][] support
  - [Schema query/migration][]
- - Works on Android, Windows, and [Linux](Documentation/Linux.md) (with some limitations)
+ - Works on iOS, macOS, Android, Windows, and Linux
 
 [SQLCipher]: https://www.zetetic.net/sqlcipher/
 [Full-text search]: Documentation/Index.md#full-text-search
@@ -36,9 +37,9 @@ do {
     let db = try Connection("path/to/db.sqlite3")
 
     let users = Table("users")
-    let id = Expression<Int64>("id")
-    let name = Expression<String?>("name")
-    let email = Expression<String>("email")
+    let id = SQLExpression<Int64>("id")
+    let name = SQLExpression<String?>("name")
+    let email = SQLExpression<String>("email")
 
     try db.run(users.create { t in
         t.column(id, primaryKey: true)
@@ -77,7 +78,7 @@ do {
 }
 ```
 
-SQLite.swift also works as a lightweight, Swift-friendly wrapper over the C
+SQLiteDB also works as a lightweight, Swift-friendly wrapper over the C
 API.
 
 ```swift
@@ -143,7 +144,6 @@ Swift code.
  - Found a **bug** or have a **feature request**? [Open an issue][].
  - Want to **contribute**? [Submit a pull request][].
 
-[See the planning document]: /Documentation/Planning.md
 [Read the contributing guidelines]: ./CONTRIBUTING.md#contributing
 [Ask on Stack Overflow]: https://stackoverflow.com/questions/tagged/sqlite.swift
 [Open an issue]: https://github.com/skiptools/swift-sqlite/issues/new
@@ -167,8 +167,6 @@ Looking for something else? Try another Swift wrapper (or [FMDB][]):
 
  - [SQLite.swift](https://github.com/stephencelis/SQLite.swift)
  - [GRDB](https://github.com/groue/GRDB.swift)
- - [SQLiteDB](https://github.com/FahimF/SQLiteDB)
- - [Squeal](https://github.com/nerdyc/Squeal)
 
 [Swift]: https://swift.org/
 [SQLite3]: https://www.sqlite.org

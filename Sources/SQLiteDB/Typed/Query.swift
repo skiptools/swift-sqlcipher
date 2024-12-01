@@ -42,8 +42,8 @@ extension SchemaType {
     /// Builds a copy of the query with the `SELECT` clause applied.
     ///
     ///     let users = Table("users")
-    ///     let id = Expression<Int64>("id")
-    ///     let email = Expression<String>("email")
+    ///     let id = SQLExpression<Int64>("id")
+    ///     let email = SQLExpression<String>("email")
     ///
     ///     users.select(id, email)
     ///     // SELECT "id", "email" FROM "users"
@@ -58,7 +58,7 @@ extension SchemaType {
     /// Builds a copy of the query with the `SELECT DISTINCT` clause applied.
     ///
     ///     let users = Table("users")
-    ///     let email = Expression<String>("email")
+    ///     let email = SQLExpression<String>("email")
     ///
     ///     users.select(distinct: email)
     ///     // SELECT DISTINCT "email" FROM "users"
@@ -73,8 +73,8 @@ extension SchemaType {
     /// Builds a copy of the query with the `SELECT` clause applied.
     ///
     ///     let users = Table("users")
-    ///     let id = Expression<Int64>("id")
-    ///     let email = Expression<String>("email")
+    ///     let id = SQLExpression<Int64>("id")
+    ///     let email = SQLExpression<String>("email")
     ///
     ///     users.select([id, email])
     ///     // SELECT "id", "email" FROM "users"
@@ -89,7 +89,7 @@ extension SchemaType {
     /// Builds a copy of the query with the `SELECT DISTINCT` clause applied.
     ///
     ///     let users = Table("users")
-    ///     let email = Expression<String>("email")
+    ///     let email = SQLExpression<String>("email")
     ///
     ///     users.select(distinct: [email])
     ///     // SELECT DISTINCT "email" FROM "users"
@@ -132,7 +132,7 @@ extension SchemaType {
     /// Builds a scalar copy of the query with the `SELECT` clause applied.
     ///
     ///     let users = Table("users")
-    ///     let id = Expression<Int64>("id")
+    ///     let id = SQLExpression<Int64>("id")
     ///
     ///     users.select(id)
     ///     // SELECT "id" FROM "users"
@@ -151,7 +151,7 @@ extension SchemaType {
     /// applied.
     ///
     ///     let users = Table("users")
-    ///     let email = Expression<String>("email")
+    ///     let email = SQLExpression<String>("email")
     ///
     ///     users.select(distinct: email)
     ///     // SELECT DISTINCT "email" FROM "users"
@@ -186,7 +186,7 @@ extension QueryType {
     /// Adds a `UNION` clause to the query.
     ///
     ///     let users = Table("users")
-    ///     let email = Expression<String>("email")
+    ///     let email = SQLExpression<String>("email")
     ///
     ///     users.filter(email == "alice@example.com").union(users.filter(email == "sally@example.com"))
     ///     // SELECT * FROM "users" WHERE email = 'alice@example.com' UNION SELECT * FROM "users" WHERE email = 'sally@example.com'
@@ -209,9 +209,9 @@ extension QueryType {
     /// Adds a `JOIN` clause to the query.
     ///
     ///     let users = Table("users")
-    ///     let id = Expression<Int64>("id")
+    ///     let id = SQLExpression<Int64>("id")
     ///     let posts = Table("posts")
-    ///     let userId = Expression<Int64>("user_id")
+    ///     let userId = SQLExpression<Int64>("user_id")
     ///
     ///     users.join(posts, on: posts[userId] == users[id])
     ///     // SELECT * FROM "users" INNER JOIN "posts" ON ("posts"."user_id" = "users"."id")
@@ -230,9 +230,9 @@ extension QueryType {
     /// Adds a `JOIN` clause to the query.
     ///
     ///     let users = Table("users")
-    ///     let id = Expression<Int64>("id")
+    ///     let id = SQLExpression<Int64>("id")
     ///     let posts = Table("posts")
-    ///     let userId = Expression<Int64?>("user_id")
+    ///     let userId = SQLExpression<Int64?>("user_id")
     ///
     ///     users.join(posts, on: posts[userId] == users[id])
     ///     // SELECT * FROM "users" INNER JOIN "posts" ON ("posts"."user_id" = "users"."id")
@@ -251,9 +251,9 @@ extension QueryType {
     /// Adds a `JOIN` clause to the query.
     ///
     ///     let users = Table("users")
-    ///     let id = Expression<Int64>("id")
+    ///     let id = SQLExpression<Int64>("id")
     ///     let posts = Table("posts")
-    ///     let userId = Expression<Int64>("user_id")
+    ///     let userId = SQLExpression<Int64>("user_id")
     ///
     ///     users.join(.LeftOuter, posts, on: posts[userId] == users[id])
     ///     // SELECT * FROM "users" LEFT OUTER JOIN "posts" ON ("posts"."user_id" = "users"."id")
@@ -274,9 +274,9 @@ extension QueryType {
     /// Adds a `JOIN` clause to the query.
     ///
     ///     let users = Table("users")
-    ///     let id = Expression<Int64>("id")
+    ///     let id = SQLExpression<Int64>("id")
     ///     let posts = Table("posts")
-    ///     let userId = Expression<Int64?>("user_id")
+    ///     let userId = SQLExpression<Int64?>("user_id")
     ///
     ///     users.join(.LeftOuter, posts, on: posts[userId] == users[id])
     ///     // SELECT * FROM "users" LEFT OUTER JOIN "posts" ON ("posts"."user_id" = "users"."id")
@@ -302,7 +302,7 @@ extension QueryType {
     /// Adds a condition to the query’s `WHERE` clause.
     ///
     ///     let users = Table("users")
-    ///     let id = Expression<Int64>("id")
+    ///     let id = SQLExpression<Int64>("id")
     ///
     ///     users.filter(id == 1)
     ///     // SELECT * FROM "users" WHERE ("id" = 1)
@@ -317,7 +317,7 @@ extension QueryType {
     /// Adds a condition to the query’s `WHERE` clause.
     ///
     ///     let users = Table("users")
-    ///     let age = Expression<Int?>("age")
+    ///     let age = SQLExpression<Int?>("age")
     ///
     ///     users.filter(age >= 35)
     ///     // SELECT * FROM "users" WHERE ("age" >= 35)
@@ -426,8 +426,8 @@ extension QueryType {
     /// Sets an `ORDER BY` clause on the query.
     ///
     ///     let users = Table("users")
-    ///     let email = Expression<String>("email")
-    ///     let name = Expression<String?>("name")
+    ///     let email = SQLExpression<String>("email")
+    ///     let name = SQLExpression<String?>("name")
     ///
     ///     users.order(email.desc, name.asc)
     ///     // SELECT * FROM "users" ORDER BY "email" DESC, "name" ASC
@@ -442,8 +442,8 @@ extension QueryType {
     /// Sets an `ORDER BY` clause on the query.
     ///
     ///     let users = Table("users")
-    ///     let email = Expression<String>("email")
-    ///     let name = Expression<String?>("name")
+    ///     let email = SQLExpression<String>("email")
+    ///     let name = SQLExpression<String?>("name")
     ///
     ///     users.order([email.desc, name.asc])
     ///     // SELECT * FROM "users" ORDER BY "email" DESC, "name" ASC

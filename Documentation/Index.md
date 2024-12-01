@@ -1,13 +1,8 @@
-# SQLite.swift Documentation
+# swift-sqlite Documentation
 
-- [SQLite.swift Documentation](#sqliteswift-documentation)
+- [swift-sqlite Documentation](#sqliteswift-documentation)
   - [Installation](#installation)
     - [Swift Package Manager](#swift-package-manager)
-    - [Carthage](#carthage)
-    - [CocoaPods](#cocoapods)
-      - [Requiring a specific version of SQLite](#requiring-a-specific-version-of-sqlite)
-      - [Using SQLite.swift with SQLCipher](#using-sqliteswift-with-sqlcipher)
-    - [Manual](#manual)
   - [Getting Started](#getting-started)
     - [Connecting to a Database](#connecting-to-a-database)
       - [Read-Write Databases](#read-write-databases)
@@ -108,7 +103,7 @@ process of downloading, compiling, and linking dependencies.
 
   ```swift
   dependencies: [
-    .package(url: "https://github.com/stephencelis/SQLite.swift.git", from: "0.15.3")
+    .package(url: "https://github.com/skiptools/swift-sqlite.git", from: "1.0.0")
   ]
   ```
 
@@ -120,147 +115,10 @@ process of downloading, compiling, and linking dependencies.
 
 [Swift Package Manager]: https://swift.org/package-manager
 
-### Carthage
-
-[Carthage][] is a simple, decentralized dependency manager for Cocoa. To
-install SQLite.swift with Carthage:
- 1. Make sure Carthage is [installed][Carthage Installation].
-
- 2. Update your Cartfile to include the following:
-
-    ```ruby
-    github "stephencelis/SQLite.swift" ~> 0.15.3
-    ```
-
- 3. Run `carthage update` and [add the appropriate framework][Carthage Usage].
-
-
-[Carthage]: https://github.com/Carthage/Carthage
-[Carthage Installation]: https://github.com/Carthage/Carthage#installing-carthage
-[Carthage Usage]: https://github.com/Carthage/Carthage#adding-frameworks-to-an-application
-
-
-### CocoaPods
-
-[CocoaPods][] is a dependency manager for Cocoa projects. To install SQLite.swift with CocoaPods:
-
- 1. Make sure CocoaPods is [installed][CocoaPods Installation] (SQLite.swift
-    requires version 1.6.1 or greater).
-
-    ```sh
-    # Using the default Ruby install will require you to use sudo when
-    # installing and updating gems.
-    [sudo] gem install cocoapods
-    ```
-
- 2. Update your Podfile to include the following:
-
-    ```ruby
-    use_frameworks!
-
-    target 'YourAppTargetName' do
-        pod 'SQLite.swift', '~> 0.15.3'
-    end
-    ```
-
- 3. Run `pod install --repo-update`.
-
-
-#### Requiring a specific version of SQLite
-
-If you want to use a more recent version of SQLite than what is provided
-with the OS you can require the `standalone` subspec:
-
-```ruby
-target 'YourAppTargetName' do
-  pod 'SQLite.swift/standalone', '~> 0.15.3'
-end
-```
-
-By default this will use the most recent version of SQLite without any
-extras. If you want you can further customize this by adding another
-dependency to sqlite3 or one of its subspecs:
-
-```ruby
-target 'YourAppTargetName' do
-  pod 'SQLite.swift/standalone', '~> 0.15.3'
-  pod 'sqlite3/fts5', '= 3.15.0'  # SQLite 3.15.0 with FTS5 enabled
-end
-```
-
-See the [sqlite3 podspec][sqlite3pod] for more details.
-
-#### Using SQLite.swift with SQLCipher
-
-If you want to use [SQLCipher][] with SQLite.swift you can require the
-`SQLCipher` subspec in your Podfile (SPM is not supported yet, see [#1084](https://github.com/stephencelis/SQLite.swift/issues/1084)):
-
-```ruby
-target 'YourAppTargetName' do
-  # Make sure you only require the subspec, otherwise you app might link against
-  # the system SQLite, which means the SQLCipher-specific methods won't work.
-  pod 'SQLite.swift/SQLCipher', '~> 0.15.3'
-end
-```
-
-This will automatically add a dependency to the SQLCipher pod as well as
-extend `Connection` with methods to change the database key:
-
-```swift
-import SQLiteDB
-
-let db = try Connection("path/to/encrypted.sqlite3")
-try db.key("secret")
-try db.rekey("new secret") // changes encryption key on already encrypted db
-```
-
-To encrypt an existing database:
-
-```swift
-let db = try Connection("path/to/unencrypted.sqlite3")
-try db.sqlcipher_export(.uri("encrypted.sqlite3"), key: "secret")
-```
-
-[CocoaPods]: https://cocoapods.org
-[CocoaPods Installation]: https://guides.cocoapods.org/using/getting-started.html#getting-started
-[sqlite3pod]: https://github.com/clemensg/sqlite3pod
-[SQLCipher]: https://www.zetetic.net/sqlcipher/
-
-### Manual
-
-To install SQLite.swift as an Xcode sub-project:
-
- 1. Drag the **SQLite.xcodeproj** file into your own project.
-    ([Submodule](http://git-scm.com/book/en/Git-Tools-Submodules), clone, or
-    [download](https://github.com/stephencelis/SQLite.swift/archive/master.zip)
-    the project first.)
-
-    ![Installation Screen Shot](Resources/installation@2x.png)
-
- 2. In your target’s **General** tab, click the **+** button under **Linked
-    Frameworks and Libraries**.
-
- 3. Select the appropriate **SQLite.framework** for your platform.
-
- 4. **Add**.
-
-You should now be able to `import SQLiteDB` from any of your target’s source
-files and begin using SQLite.swift.
-
-Some additional steps are required to install the application on an actual
-device:
-
- 5. In the **General** tab, click the **+** button under **Embedded
-    Binaries**.
-
- 6. Select the appropriate **SQLite.framework** for your platform.
-
- 7. **Add**.
-
 ## Getting Started
 
-To use SQLite.swift classes or structures in your target’s source file, first
-import the `SQLite` module.
+To use SQLiteDB classes or structures in your target’s source file, first
+import the `SQLiteDB` module.
 
 ```swift
 import SQLiteDB
@@ -359,7 +217,7 @@ some users have reported crashes ([#1042](https://github.com/stephencelis/SQLite
 
 #### In-Memory Databases
 
-If you omit the path, SQLite.swift will provision an [in-memory
+If you omit the path, SQLiteDB will provision an [in-memory
 database](https://www.sqlite.org/inmemorydb.html).
 
 ```swift
@@ -412,7 +270,7 @@ db.busyHandler({ tries in
 
 ## Building Type-Safe SQL
 
-SQLite.swift comes with a typed expression layer that directly maps
+SQLiteDB comes with a typed expression layer that directly maps
 [Swift types](https://developer.apple.com/library/prerelease/ios/documentation/General/Reference/SwiftStandardLibraryReference/)
 to their [SQLite counterparts](https://www.sqlite.org/datatype3.html).
 
@@ -430,11 +288,11 @@ to their [SQLite counterparts](https://www.sqlite.org/datatype3.html).
 > *While `Int64` is the basic, raw type (to preserve 64-bit integers on
 > 32-bit platforms), `Int` and `Bool` work transparently.
 >
-> †SQLite.swift defines its own `Blob` structure, which safely wraps the
+> †SQLiteDB defines its own `Blob` structure, which safely wraps the
 > underlying bytes.
 >
 > See [Custom Types](#custom-types) for more information about extending
-> other classes and structures to work with SQLite.swift.
+> other classes and structures to work with SQLiteDB.
 >
 > See [Executing Arbitrary SQL](#executing-arbitrary-sql) to forego the typed
 > layer and execute raw SQL, instead.
@@ -446,26 +304,26 @@ These expressions (in the form of the structure,
 
 ### Expressions
 
-Expressions are generic structures associated with a type ([built-in
+SQLExpressions are generic structures associated with a type ([built-in
 ](#building-type-safe-sql) or [custom](#custom-types)), raw SQL, and
 (optionally) values to bind to that SQL. Typically, you will only explicitly
 create expressions to describe your columns, and typically only once per
 column.
 
 ```swift
-let id = Expression<Int64>("id")
-let email = Expression<String>("email")
-let balance = Expression<Double>("balance")
-let verified = Expression<Bool>("verified")
+let id = SQLExpression<Int64>("id")
+let email = SQLExpression<String>("email")
+let balance = SQLExpression<Double>("balance")
+let verified = SQLExpression<Bool>("verified")
 ```
 
 Use optional generics for expressions that can evaluate to `NULL`.
 
 ```swift
-let name = Expression<String?>("name")
+let name = SQLExpression<String?>("name")
 ```
 
-> _Note:_ The default `Expression` initializer is for [quoted
+> _Note:_ The default `SQLExpression` initializer is for [quoted
 > identifiers](https://www.sqlite.org/lang_keywords.html) (_i.e._, column
 > names). To build a literal SQL expression, use `init(literal:)`.
 > <!-- FIXME -->
@@ -499,7 +357,7 @@ Assuming [the table exists](#creating-a-table), we can immediately [insert
 We can build [`CREATE TABLE`
 statements](https://www.sqlite.org/lang_createtable.html) by calling the
 `create` function on a `Table`. The following is a basic example of
-SQLite.swift code (using the [expressions](#expressions) and
+SQLiteDB code (using the [expressions](#expressions) and
 [query](#queries) above) and the corresponding SQL it generates.
 
 ```swift
@@ -510,9 +368,9 @@ try db.run(users.create { t in     // CREATE TABLE "users" (
 })                                 // )
 ```
 
-> _Note:_ `Expression<T>` structures (in this case, the `id` and `email`
+> _Note:_ `SQLExpression<T>` structures (in this case, the `id` and `email`
 > columns), generate `NOT NULL` constraints automatically, while
-> `Expression<T?>` structures (`name`) do not.
+> `SQLExpression<T?>` structures (`name`) do not.
 
 
 ### Create Table Options
@@ -559,7 +417,7 @@ several parameters that map to various column constraints and clauses.
     > `foreignKey` functions mentioned under
     > [Table Constraints](#table-constraints).
     >
-    > Primary keys cannot be optional (_e.g._, `Expression<Int64?>`).
+    > Primary keys cannot be optional (_e.g._, `SQLExpression<Int64?>`).
     >
     > Only an `INTEGER PRIMARY KEY` can take `.autoincrement`.
 
@@ -573,7 +431,7 @@ several parameters that map to various column constraints and clauses.
     ```
 
   - `check` attaches a `CHECK` constraint to a column definition in the form
-    of a boolean expression (`Expression<Bool>`). Boolean expressions can be
+    of a boolean expression (`SQLExpression<Bool>`). Boolean expressions can be
     easily built using
     [filter operators and functions](#filter-operators-and-functions).
     (See also the `check` function under
@@ -600,8 +458,8 @@ several parameters that map to various column constraints and clauses.
     > `primaryKey` and `foreignKey` functions mentioned under
     > [Table Constraints](#table-constraints).
 
-  - `collate` adds a `COLLATE` clause to `Expression<String>` (and
-    `Expression<String?>`) column definitions with
+  - `collate` adds a `COLLATE` clause to `SQLExpression<String>` (and
+    `SQLExpression<String?>`) column definitions with
     [a collating sequence](https://www.sqlite.org/datatype3.html#collation)
     defined in the `Collation` enumeration.
 
@@ -613,8 +471,8 @@ several parameters that map to various column constraints and clauses.
     // "name" TEXT COLLATE "RTRIM"
     ```
 
-  - `references` adds a `REFERENCES` clause to `Expression<Int64>` (and
-    `Expression<Int64?>`) column definitions and accepts a table
+  - `references` adds a `REFERENCES` clause to `SQLExpression<Int64>` (and
+    `SQLExpression<Int64?>`) column definitions and accepts a table
     (`SchemaType`) or namespaced column expression. (See the `foreignKey`
     function under [Table Constraints](#table-constraints) for non-integer
     foreign key support.)
@@ -656,7 +514,7 @@ using the following functions.
     ```
 
   - `check` adds a `CHECK` constraint to the table in the form of a boolean
-    expression (`Expression<Bool>`). Boolean expressions can be easily built
+    expression (`SQLExpression<Bool>`). Boolean expressions can be easily built
     using [filter operators and functions](#filter-operators-and-functions).
     (See also the `check` parameter under
     [Column Constraints](#column-constraints).)
@@ -756,7 +614,7 @@ for details) and a optional reference to the `statement` which produced the erro
 
 ### Setters
 
-SQLite.swift typically uses the `<-` operator to set values during [inserts
+SQLiteDB typically uses the `<-` operator to set values during [inserts
 ](#inserting-rows) and [updates](#updating-rows).
 
 ```swift
@@ -836,12 +694,12 @@ for user in try db.prepare(users) {
 // SELECT * FROM "users"
 ```
 
-`Expression<T>` column values are _automatically unwrapped_ (we’ve made a
-promise to the compiler that they’ll never be `NULL`), while `Expression<T?>`
+`SQLExpression<T>` column values are _automatically unwrapped_ (we’ve made a
+promise to the compiler that they’ll never be `NULL`), while `SQLExpression<T?>`
 values remain wrapped.
 
 ⚠ Column subscripts on `Row` will force try and abort execution in error cases.
-If you want to handle this yourself, use `Row.get(_ column: Expression<V>)`:
+If you want to handle this yourself, use `Row.get(_ column: SQLExpression<V>)`:
 
 ```swift
 for user in try db.prepare(users) {
@@ -941,7 +799,7 @@ We can access the results of more complex expressions by holding onto a
 reference of the expression itself.
 
 ```swift
-let sentence = name + " is " + cast(age) as Expression<String?> + " years old!"
+let sentence = name + " is " + cast(age) as SQLExpression<String?> + " years old!"
 for user in users.select(sentence) {
     print(user[sentence])
     // Optional("Alice is 30 years old!")
@@ -1025,8 +883,8 @@ user[managers[id]] // returns "managers"."id"
 
 #### Filtering Rows
 
-SQLite.swift filters rows using a [query’s](#queries) `filter` function with
-a boolean [expression](#expressions) (`Expression<Bool>`).
+SQLiteDB filters rows using a [query’s](#queries) `filter` function with
+a boolean [expression](#expressions) (`SQLExpression<Bool>`).
 
 ```swift
 users.filter(id == 1)
@@ -1057,7 +915,7 @@ users.where(id == 1)
 
 ##### Filter Operators and Functions
 
-SQLite.swift defines a number of operators for building filtering predicates.
+SQLiteDB defines a number of operators for building filtering predicates.
 Operators and functions work together in a type-safe manner, so attempting to
 equate or compare different types will prevent compilation.
 
@@ -1078,7 +936,7 @@ equate or compare different types will prevent compilation.
 | `===` | `Equatable -> Bool`              | `IS`           |
 | `!==` | `Equatable -> Bool`              | `IS NOT`       |
 
-> * When comparing against `nil`, SQLite.swift will use `IS` and `IS NOT`
+> * When comparing against `nil`, SQLiteDB will use `IS` and `IS NOT`
 > accordingly.
 
 
@@ -1150,8 +1008,8 @@ We can perform a recursive or hierarchical query using a [query's](#queries)
 // Get the management chain for the manager with id == 8
 
 let chain = Table("chain")
-let id = Expression<Int64>("id")
-let managerId = Expression<Int64>("manager_id")
+let id = SQLExpression<Int64>("id")
+let managerId = SQLExpression<Int64>("manager_id")
 
 let query = managers
     .where(id == 8)
@@ -1172,7 +1030,7 @@ Column names and a materialization hint can optionally be provided.
 
 ```swift
 // Add a "level" column to the query representing manager's position in the chain
-let level = Expression<Int64>("level")
+let level = SQLExpression<Int64>("level")
 
 let queryWithLevel =
     managers
@@ -1438,7 +1296,7 @@ for column in columns {
 
 ## Altering the Schema
 
-SQLite.swift comes with several functions (in addition to `Table.create`) for
+SQLiteDB comes with several functions (in addition to `Table.create`) for
 altering a database schema in a type-safe manner.
 
 ### Renaming Tables
@@ -1473,7 +1331,7 @@ try db.run(users.drop(ifExists: true))
 ### Adding Columns
 
 We can add columns to a table by calling `addColumn` function on a `Table`.
-SQLite.swift enforces
+SQLiteDB enforces
 [the same limited subset](https://www.sqlite.org/lang_altertable.html) of
 `ALTER TABLE` that SQLite supports.
 
@@ -1489,7 +1347,7 @@ parameters](#column-constraints) used when [creating
 tables](#creating-a-table).
 
   - `check` attaches a `CHECK` constraint to a column definition in the form
-    of a boolean expression (`Expression<Bool>`). (See also the `check`
+    of a boolean expression (`SQLExpression<Bool>`). (See also the `check`
     function under [Table Constraints](#table-constraints).)
 
     ```swift
@@ -1510,8 +1368,8 @@ tables](#creating-a-table).
     > default values may not be expression structures (including
     > `CURRENT_TIME`, `CURRENT_DATE`, or `CURRENT_TIMESTAMP`).
 
-  - `collate` adds a `COLLATE` clause to `Expression<String>` (and
-    `Expression<String?>`) column definitions with [a collating
+  - `collate` adds a `COLLATE` clause to `SQLExpression<String>` (and
+    `SQLExpression<String?>`) column definitions with [a collating
     sequence](https://www.sqlite.org/datatype3.html#collation) defined in the
     `Collation` enumeration.
 
@@ -1662,7 +1520,7 @@ system [SQLiteMigrationManager.swift][].
 
 ## Custom Types
 
-SQLite.swift supports serializing and deserializing any custom type as long
+SQLiteDB supports serializing and deserializing any custom type as long
 as it conforms to the `Value` protocol.
 
 ```swift
@@ -1678,7 +1536,7 @@ The `Datatype` must be one of the basic Swift types that values are bridged
 through before serialization and deserialization (see [Building Type-Safe SQL
 ](#building-type-safe-sql) for a list of types).
 
-> ⚠ _Note:_ `Binding` is a protocol that SQLite.swift uses internally to
+> ⚠ _Note:_ `Binding` is a protocol that SQLiteDB uses internally to
 > directly map SQLite types to Swift types. **Do _not_** conform custom types
 > to the `Binding` protocol.
 
@@ -1691,7 +1549,7 @@ transparently bridge `Date` objects through Swift’s `String` types.
 We can use these types directly in SQLite statements.
 
 ```swift
-let published_at = Expression<Date>("published_at")
+let published_at = SQLExpression<Date>("published_at")
 
 let published = posts.filter(published_at <= Date())
 // SELECT * FROM "posts" WHERE "published_at" <= '2014-11-18T12:45:30.000'
@@ -1730,7 +1588,7 @@ extension UIImage: Value {
 ## Codable Types
 
 [Codable types][Encoding and Decoding Custom Types] were introduced as a part
-of Swift 4 to  allow serializing and deserializing types. SQLite.swift supports
+of Swift 4 to  allow serializing and deserializing types. SQLiteDB supports
 the insertion, updating, and retrieval of basic Codable types.
 
 [Encoding and Decoding Custom Types]: https://developer.apple.com/documentation/foundation/archives_and_serialization/encoding_and_decoding_custom_types
@@ -1842,7 +1700,7 @@ There are a few restrictions on using Codable types:
 
 ## Other Operators
 
-In addition to [filter operators](#filtering-infix-operators), SQLite.swift
+In addition to [filter operators](#filtering-infix-operators), SQLiteDB
 defines a number of operators that can modify expression values with
 arithmetic, bitwise operations, and concatenation.
 
@@ -1862,7 +1720,7 @@ arithmetic, bitwise operations, and concatenation.
 | `\|`  | `Int -> Int`                     | `\|`     |
 | `+`   | `String -> String`               | `\|\|`   |
 
-> _Note:_ SQLite.swift also defines a bitwise XOR operator, `^`, which
+> _Note:_ SQLiteDB also defines a bitwise XOR operator, `^`, which
 > expands the expression `lhs ^ rhs` to `~(lhs & rhs) & (lhs | rhs)`.
 
 
@@ -1877,9 +1735,9 @@ arithmetic, bitwise operations, and concatenation.
 ## Core SQLite Functions
 
 Many of SQLite’s [core functions](https://www.sqlite.org/lang_corefunc.html)
-have been surfaced in and type-audited for SQLite.swift.
+have been surfaced in and type-audited for SQLiteDB.
 
-> _Note:_ SQLite.swift aliases the `??` operator to the `ifnull` function.
+> _Note:_ SQLiteDB aliases the `??` operator to the `ifnull` function.
 >
 > ```swift
 > name ?? email // ifnull("name", "email")
@@ -1890,12 +1748,12 @@ have been surfaced in and type-audited for SQLite.swift.
 
 Most of SQLite’s
 [aggregate functions](https://www.sqlite.org/lang_aggfunc.html) have been
-surfaced in and type-audited for SQLite.swift.
+surfaced in and type-audited for SQLiteDB.
 
 ## Window SQLite Functions
 
 Most of SQLite's [window functions](https://www.sqlite.org/windowfunctions.html) have been
-surfaced in and type-audited for SQLite.swift. Currently only `OVER (ORDER BY ...)` windowing is possible. 
+surfaced in and type-audited for SQLiteDB. Currently only `OVER (ORDER BY ...)` windowing is possible. 
 
 ## Date and Time functions
 
@@ -1907,7 +1765,7 @@ DateFunctions.date("now")
 // date('now')
 Date().date
 // date('2007-01-09T09:41:00.000')
-Expression<Date>("date").date
+SQLExpression<Date>("date").date
 // date("date")
 ```
 
@@ -1923,7 +1781,7 @@ write the following:
 ```swift
 import MobileCoreServices
 
-let typeConformsTo: (Expression<String>, Expression<String>) -> Expression<Bool> = (
+let typeConformsTo: (SQLExpression<String>, SQLExpression<String>) -> SQLExpression<Bool> = (
     try db.createFunction("typeConformsTo", deterministic: true) { UTI, conformsToUTI in
         return UTTypeConformsTo(UTI, conformsToUTI)
     }
@@ -1937,7 +1795,7 @@ let typeConformsTo: (Expression<String>, Expression<String>) -> Expression<Bool>
 Note `typeConformsTo`’s signature:
 
 ```swift
-(Expression<String>, Expression<String>) -> Expression<Bool>
+(SQLExpression<String>, SQLExpression<String>) -> SQLExpression<Bool>
 ```
 
 Because of this, `createFunction` expects a block with the following
@@ -1952,7 +1810,7 @@ accepted.
 
 ```swift
 let attachments = Table("attachments")
-let UTI = Expression<String>("UTI")
+let UTI = SQLExpression<String>("UTI")
 
 let images = attachments.filter(typeConformsTo(UTI, kUTTypeImage))
 // SELECT * FROM "attachments" WHERE "typeConformsTo"("UTI", 'public.image')
@@ -2030,8 +1888,8 @@ module](http://www.sqlite.org/fts3.html) by calling `create` on a
 
 ```swift
 let emails = VirtualTable("emails")
-let subject = Expression<String>("subject")
-let body = Expression<String>("body")
+let subject = SQLExpression<String>("subject")
+let body = SQLExpression<String>("body")
 
 try db.run(emails.create(.FTS4(subject, body)))
 // CREATE VIRTUAL TABLE "emails" USING fts4("subject", "body")
@@ -2048,8 +1906,8 @@ We can set the full range of parameters by creating a `FTS4Config` object.
 
 ```swift
 let emails = VirtualTable("emails")
-let subject = Expression<String>("subject")
-let body = Expression<String>("body")
+let subject = SQLExpression<String>("subject")
+let body = SQLExpression<String>("body")
 let config = FTS4Config()
     .column(subject)
     .column(body, [.unindexed])
@@ -2085,8 +1943,8 @@ table in a similar fashion.
 
 ```swift
 let emails = VirtualTable("emails")
-let subject = Expression<String>("subject")
-let body = Expression<String>("body")
+let subject = SQLExpression<String>("subject")
+let body = SQLExpression<String>("body")
 let config = FTS5Config()
     .column(subject)
     .column(body, [.unindexed])
@@ -2102,7 +1960,7 @@ let replies = emails.filter(emails.match("subject:\"Re:\"*"))
 
 ## Executing Arbitrary SQL
 
-Though we recommend you stick with SQLite.swift’s
+Though we recommend you stick with SQLiteDB’s
 [type-safe system](#building-type-safe-sql) whenever possible, it is possible
 to simply and safely prepare and execute raw SQL statements via a `Database` connection
 using the following functions.
