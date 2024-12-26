@@ -82,7 +82,6 @@ SQLiteDB also works as a lightweight, Swift-friendly wrapper over the C
 API.
 
 ```swift
-// Wrap everything in a do...catch to handle errors
 do {
     // ...
 
@@ -135,26 +134,14 @@ Swift code.
 
 ## Communication
 
-[See the planning document] for a roadmap and existing feature requests.
-
 [Read the contributing guidelines][]. The _TL;DR_ (but please; _R_):
 
- - Need **help** or have a **general question**? [Ask on Stack
-   Overflow][] (tag `sqlite.swift`).
  - Found a **bug** or have a **feature request**? [Open an issue][].
  - Want to **contribute**? [Submit a pull request][].
 
 [Read the contributing guidelines]: ./CONTRIBUTING.md#contributing
-[Ask on Stack Overflow]: https://stackoverflow.com/questions/tagged/sqlite.swift
 [Open an issue]: https://github.com/skiptools/swift-sqlite/issues/new
-[Submit a pull request]: https://github.com/skiptools/swift-sqlite/fork
-
-
-## Original author
-
- - [Stephen Celis](mailto:stephen@stephencelis.com)
-   ([@stephencelis](https://twitter.com/stephencelis))
-
+[Submit a pull request]: https://github.com/skiptools/swift-sqlite/pulls
 
 ## License
 
@@ -163,12 +150,13 @@ file](./LICENSE.txt) for more information.
 
 ## Alternatives
 
-Looking for something else? Try another Swift wrapper (or [FMDB][]):
+Here are a number of other popular SQLite alternative packages:
 
+ - [swift-toolchain-sqlite](https://github.com/swiftlang/swift-toolchain-sqlite)
  - [SQLite.swift](https://github.com/stephencelis/SQLite.swift)
  - [GRDB](https://github.com/groue/GRDB.swift)
+ - [FMDB]
 
-[Swift]: https://swift.org/
 [SQLite3]: https://www.sqlite.org
 [SQLite.swift]: https://github.com/stephencelis/SQLite.swift
 [FMDB]: https://github.com/ccgus/fmdb
