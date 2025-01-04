@@ -9,19 +9,14 @@ on:
   schedule:
     - cron: '0 6,18 * * *'
 jobs:
-  linux:
+  linux-android:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - run: swift test
-  android:
-    # emulator fails to launch on ARM macOS with: HVF error: HV_UNSUPPORTED
-    # so we need to run on Intel macOS, which is macos-13
-    runs-on: macos-13
-    steps:
-      - uses: actions/checkout@v4
       - name: "Test Swift Package Android"
-        uses: skiptools/swift-android-action@v1
+        uses: marcprux/swift-android-action@main
+      - name: "Test Swift Package Linux"
+        run: swift test
   macos-ios:
     runs-on: macos-latest
     steps:
@@ -38,6 +33,5 @@ jobs:
           branch: swift-5.9-release
           tag: 5.9-RELEASE
       - uses: actions/checkout@v4
-      - run: swift build
       - run: swift test
 
