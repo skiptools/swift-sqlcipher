@@ -1,9 +1,13 @@
-# swift-sqlite
+# swift-sqlcipher
 
-swift-sqlite is a cross-platform modernization of the [SQLite.swift] project. 
+swift-sqlcipher is a C source packaging of [SQLite3]
+with the [SQLCipher] and [Full-text search] extensions,
+along with a [SQLiteDB] Swift package that provides
+API parity with the [SQLite.swift] project.
 
-It includes [SQLite3] with [Full-text search] and [SQLCipher] extensions,
-and works out-of-the-box on macOS, iOS, Linux, Android, and Windows.
+It is meant to be a platform-agnostic project and does not presume the presence
+of any specific SQLite binary. 
+It works out-of-the-box on macOS, iOS, Linux, Android, and Windows.
 
 ## Features
 
@@ -119,7 +123,7 @@ Swift code.
 
   ```swift
   dependencies: [
-      .package(url: "https://github.com/skiptools/swift-sqlite.git", from "1.0.0")
+      .package(url: "https://github.com/skiptools/swift-sqlcipher.git", from "1.0.0")
   ]
   ```
 
@@ -140,8 +144,8 @@ Swift code.
  - Want to **contribute**? [Submit a pull request][].
 
 [Read the contributing guidelines]: ./CONTRIBUTING.md#contributing
-[Open an issue]: https://github.com/skiptools/swift-sqlite/issues/new
-[Submit a pull request]: https://github.com/skiptools/swift-sqlite/pulls
+[Open an issue]: https://github.com/skiptools/swift-sqlcipher/issues/new
+[Submit a pull request]: https://github.com/skiptools/swift-sqlcipher/pulls
 
 ## License
 

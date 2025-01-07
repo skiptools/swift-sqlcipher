@@ -1,6 +1,6 @@
-# swift-sqlite Documentation
+# swift-sqlcipher Documentation
 
-- [swift-sqlite Documentation](#sqliteswift-documentation)
+- [swift-sqlcipher Documentation](#sqliteswift-documentation)
   - [Installation](#installation)
     - [Swift Package Manager](#swift-package-manager)
   - [Getting Started](#getting-started)
@@ -103,7 +103,7 @@ process of downloading, compiling, and linking dependencies.
 
   ```swift
   dependencies: [
-    .package(url: "https://github.com/skiptools/swift-sqlite.git", from: "1.0.0")
+    .package(url: "https://github.com/skiptools/swift-sqlcipher.git", from: "1.0.0")
   ]
   ```
 

@@ -2,7 +2,7 @@
 import PackageDescription
 
 let package = Package(
-    name: "swift-sqlite",
+    name: "swift-sqlcipher",
     platforms: [
         .iOS(.v13),
         .macOS(.v10_13),
