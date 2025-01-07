@@ -1,18 +1,20 @@
-# swift-sqlcipher
+# Swift SQLCipher
 
 swift-sqlcipher is a C source packaging of [SQLite3]
-with the [SQLCipher] and [Full-text search] extensions,
+with built-in [SQLCipher] and [Full-text search] extensions,
 along with a [SQLiteDB] Swift package that provides
-API parity with the [SQLite.swift] project.
+API parity with the venerable [SQLite.swift] project.
 
-It is meant to be a platform-agnostic project and does not presume the presence
-of any specific SQLite binary. 
-It works out-of-the-box on macOS, iOS, Linux, Android, and Windows.
+This is a stand-along and platform-agnostic project, and 
+does not presume the presence of any SQLite binary.
+It is therefore suitable for embedded projects or 
+environments without any accessible `sqlite3.so` library (e.g., Android).
 
 ## Features
 
  - A pure-Swift interface
  - Embeds a modern and consistent sqlite (3.46.1) and sqlcipher (4.6.1) build in the library
+ - Works on iOS, macOS, Android, Windows, and Linux
  - A type-safe, optional-aware SQL expression builder
  - A flexible, chainable, lazy-executing query layer
  - Automatically-typed data access
@@ -23,7 +25,6 @@ It works out-of-the-box on macOS, iOS, Linux, Android, and Windows.
  - Extensively tested
  - [SQLCipher][] support using the embedded [LibTomCrypt][] library
  - [Schema query/migration][]
- - Works on iOS, macOS, Android, Windows, and Linux
 
 [SQLCipher]: https://www.zetetic.net/sqlcipher/
 [LibTomCrypt]: http://www.libtom.net/LibTomCrypt/
@@ -36,78 +37,73 @@ It works out-of-the-box on macOS, iOS, Linux, Android, and Windows.
 ```swift
 import SQLiteDB
 
-// Wrap everything in a do...catch to handle errors
-do {
-    let db = try Connection("path/to/db.sqlite3")
+let db = try Connection("path/to/db.sqlite3")
 
-    let users = Table("users")
-    let id = SQLExpression<Int64>("id")
-    let name = SQLExpression<String?>("name")
-    let email = SQLExpression<String>("email")
+// set the (optional) encryption key for the database
+// this must be the first action performed on the Connection
+try db.key("x'2DD29CA851E7B56E4697B0E1F08507293D761A05CE4D1B628663F411A8086D99'")
 
-    try db.run(users.create { t in
-        t.column(id, primaryKey: true)
-        t.column(name)
-        t.column(email, unique: true)
-    })
-    // CREATE TABLE "users" (
-    //     "id" INTEGER PRIMARY KEY NOT NULL,
-    //     "name" TEXT,
-    //     "email" TEXT NOT NULL UNIQUE
-    // )
+let users = Table("users")
+let id = SQLExpression<Int64>("id")
+let name = SQLExpression<String?>("name")
+let email = SQLExpression<String>("email")
 
-    let insert = users.insert(name <- "Alice", email <- "alice@mac.com")
-    let rowid = try db.run(insert)
-    // INSERT INTO "users" ("name", "email") VALUES ('Alice', 'alice@mac.com')
+try db.run(users.create { t in
+    t.column(id, primaryKey: true)
+    t.column(name)
+    t.column(email, unique: true)
+})
+// CREATE TABLE "users" (
+//     "id" INTEGER PRIMARY KEY NOT NULL,
+//     "name" TEXT,
+//     "email" TEXT NOT NULL UNIQUE
+// )
 
-    for user in try db.prepare(users) {
-        print("id: \(user[id]), name: \(user[name]), email: \(user[email])")
-        // id: 1, name: Optional("Alice"), email: alice@mac.com
-    }
-    // SELECT * FROM "users"
+let insert = users.insert(name <- "Alice", email <- "alice@mac.com")
+let rowid = try db.run(insert)
+// INSERT INTO "users" ("name", "email") VALUES ('Alice', 'alice@mac.com')
 
-    let alice = users.filter(id == rowid)
-
-    try db.run(alice.update(email <- email.replace("mac.com", with: "me.com")))
-    // UPDATE "users" SET "email" = replace("email", 'mac.com', 'me.com')
-    // WHERE ("id" = 1)
-
-    try db.run(alice.delete())
-    // DELETE FROM "users" WHERE ("id" = 1)
-
-    try db.scalar(users.count) // 0
-    // SELECT count(*) FROM "users"
-} catch {
-    print (error)
+for user in try db.prepare(users) {
+    print("id: \(user[id]), name: \(user[name]), email: \(user[email])")
+    // id: 1, name: Optional("Alice"), email: alice@mac.com
 }
+// SELECT * FROM "users"
+
+let alice = users.filter(id == rowid)
+
+try db.run(alice.update(email <- email.replace("mac.com", with: "me.com")))
+// UPDATE "users" SET "email" = replace("email", 'mac.com', 'me.com')
+// WHERE ("id" = 1)
+
+try db.run(alice.delete())
+// DELETE FROM "users" WHERE ("id" = 1)
+
+try db.scalar(users.count) // 0
+// SELECT count(*) FROM "users"
 ```
 
 SQLiteDB also works as a lightweight, Swift-friendly wrapper over the C
 API.
 
 ```swift
-do {
-    // ...
+// ...
 
-    let stmt = try db.prepare("INSERT INTO users (email) VALUES (?)")
-    for email in ["betty@icloud.com", "cathy@icloud.com"] {
-        try stmt.run(email)
-    }
-
-    db.totalChanges    // 3
-    db.changes         // 1
-    db.lastInsertRowid // 3
-
-    for row in try db.prepare("SELECT id, email FROM users") {
-        print("id: \(row[0]), email: \(row[1])")
-        // id: Optional(2), email: Optional("betty@icloud.com")
-        // id: Optional(3), email: Optional("cathy@icloud.com")
-    }
-
-    try db.scalar("SELECT count(*) FROM users") // 2
-} catch {
-    print (error)
+let stmt = try db.prepare("INSERT INTO users (email) VALUES (?)")
+for email in ["betty@icloud.com", "cathy@icloud.com"] {
+    try stmt.run(email)
 }
+
+db.totalChanges    // 3
+db.changes         // 1
+db.lastInsertRowid // 3
+
+for row in try db.prepare("SELECT id, email FROM users") {
+    print("id: \(row[0]), email: \(row[1])")
+    // id: Optional(2), email: Optional("betty@icloud.com")
+    // id: Optional(3), email: Optional("cathy@icloud.com")
+}
+
+try db.scalar("SELECT count(*) FROM users") // 2
 ```
 
 [Read the documentation][See Documentation]
@@ -149,16 +145,15 @@ Swift code.
 
 ## License
 
-SQLite.swift is available under the MIT license. See [the LICENSE
-file](./LICENSE.txt) for more information.
+MIT license. See [the LICENSE file](./LICENSE.txt) for more information.
 
 ## Alternatives
 
 Here are a number of other popular SQLite alternative packages:
 
- - [swift-toolchain-sqlite](https://github.com/swiftlang/swift-toolchain-sqlite)
  - [SQLite.swift](https://github.com/stephencelis/SQLite.swift)
  - [GRDB](https://github.com/groue/GRDB.swift)
+ - [swift-toolchain-sqlite](https://github.com/swiftlang/swift-toolchain-sqlite)
  - [FMDB]
 
 [SQLite3]: https://www.sqlite.org
