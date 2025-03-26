@@ -63,6 +63,7 @@ let package = Package(
                 .define("SQLITE_EXTRA_INIT", to: "sqlcipher_extra_init"),
                 .define("SQLITE_EXTRA_SHUTDOWN", to: "sqlcipher_extra_shutdown"),
                 .define("HAVE_GETHOSTUUID", to: "0"),
+                .define("HAVE_STDINT_H"),
                 .define("SQLCIPHER_CRYPTO_LIBTOMCRYPT"),
             ],
             linkerSettings: [.linkedLibrary("log", .when(platforms: [.android]))]),
