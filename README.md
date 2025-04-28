@@ -2207,9 +2207,9 @@ depending on the needs of the developer.
 
 ## Communication
 
- - [Browse discussions]: https://github.com/skiptools/swift-sqlcipher/discussions
- - [Open an issue]: https://github.com/skiptools/swift-sqlcipher/issues/new
- - [Submit a pull request]: https://github.com/skiptools/swift-sqlcipher/pulls
+ - [Browse discussions](https://github.com/skiptools/swift-sqlcipher/discussions)
+ - [Open an issue](https://github.com/skiptools/swift-sqlcipher/issues/new)
+ - [Submit a pull request](https://github.com/skiptools/swift-sqlcipher/pulls)
 
 ## License
 
