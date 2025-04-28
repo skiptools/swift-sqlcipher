@@ -2213,7 +2213,9 @@ depending on the needs of the developer.
 
 ## License
 
-MIT license. See [the LICENSE file](./LICENSE.txt) for more information.
+ - This swift-sqlcipher package uses the MIT license. See [the LICENSE file](./LICENSE.txt) for more information.
+ - The sqlcipher license is available at [https://github.com/sqlcipher/sqlcipher/blob/master/LICENSE.txt](https://github.com/sqlcipher/sqlcipher/blob/master/LICENSE.txt).
+ - SQLite3 is in the public domain. Its license is available at [https://sqlite.org/purchase/license](https://sqlite.org/purchase/license).
 
 ## Alternatives
 
