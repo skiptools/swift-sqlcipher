@@ -14,7 +14,7 @@ library (e.g., Android, Windows).
 ## Features
 
  - A pure-Swift interface
- - Embeds a modern and consistent sqlite ([3.49.1](https://www.sqlite.org/releaselog/3_49_1.html)) and sqlcipher ([4.7.0](https://github.com/sqlcipher/sqlcipher/releases/tag/v4.7.0)) build in the library
+ - Embeds a modern and consistent sqlite ([3.49.1](https://www.sqlite.org/releaselog/3_49_1.html)) and sqlcipher ([4.8.0](https://github.com/sqlcipher/sqlcipher/releases/tag/v4.8.0)) build in the library
  - Works on iOS, macOS, Android, Windows, and Linux
  - A type-safe, optional-aware SQL expression builder
  - A flexible, chainable, lazy-executing query layer
@@ -120,7 +120,8 @@ library (e.g., Android, Windows).
   - [Online Database Backup](#online-database-backup)
   - [Attaching and detaching databases](#attaching-and-detaching-databases)
   - [Logging](#logging)
-  - [Vacuum](#vacuum)
+  - [Database Middleware Packages](#database-middleware-packages)
+  - [Communication](#communication)
 
 [↩]: #sqliteswift-documentation
 
@@ -136,7 +137,7 @@ process of downloading, compiling, and linking dependencies.
 
   ```swift
   dependencies: [
-    .package(url: "https://github.com/skiptools/swift-sqlcipher.git", from: "1.3.0")
+    .package(url: "https://github.com/skiptools/swift-sqlcipher.git", from: "1.4.0")
   ]
   ```
 
@@ -150,13 +151,32 @@ process of downloading, compiling, and linking dependencies.
 
 ## Getting Started
 
+If you just want to use the low-level SQLCipher functions instead of SQLite3,
+you can conditionally import the package:
+
+```swift
+#if canImport(SQLCipher)
+import SQLCipher
+#else
+import SQLite3
+#endif
+```
+
+SQLCipher is API-compatible with the SQLite3 framework that is included on many platforms,
+including iOS and Android.
+
+The remainder of this document assumes you want to use the higher-level SQLiteDB
+interface atop the SQLCipher package. This interface is based on the
+[SQLite.swift](https://github.com/stephencelis/SQLite.swift) package, but
+uses SQLCipher rather than SQLite3 and enables various features like encryption,
+FTS5, and JSON support.
+
 To use SQLiteDB classes or structures in your target’s source file, first
 import the `SQLiteDB` module.
 
 ```swift
 import SQLiteDB
 ```
-
 
 ### Connecting to a Database
 
@@ -165,7 +185,7 @@ connection is initialized with a path to a database. SQLite will attempt to
 create the database file if it does not already exist.
 
 ```swift
-let db = try Connection("path/to/db.sqlite3")
+let db = try Connection("path/to/database.db")
 ```
 
 
@@ -178,7 +198,7 @@ directory.
 let path = URL.applicationSupportDirectory
 // create parent directory inside application support if it doesn’t exist
 try FileManager.default.createDirectory(atPath: path, withIntermediateDirectories: true, attributes: nil)
-let db = try Connection(dbURL.appendingPathComponent("db.sqlite3").path)
+let db = try Connection(dbURL.appendingPathComponent("database.db").path)
 ```
 
 #### Read-Only Databases
@@ -193,7 +213,7 @@ let path = Bundle.main.path(forResource: "db", ofType: "sqlite3")!
 let db = try Connection(path, readonly: true)
 ```
 
-> [!NOTE]
+> [!WARNING]
 > Signed applications cannot modify their bundle resources. If you
 > bundle a database file with your app for the purpose of bootstrapping, copy
 > it to a writable location _before_ establishing a connection (see
@@ -2112,6 +2132,62 @@ try db.vacuum()
 [ROWID]: https://sqlite.org/lang_createtable.html#rowid
 [SQLiteMigrationManager.swift]: https://github.com/garriguv/SQLiteMigrationManager.swift
 
+## Database Middleware Packages
+
+If you have a Swift package that acts as database middleware, such as an ORM
+or other database access layer, that uses the SQLite3 C API directly, you can expose a 
+[SwiftPM 6.1 trait](https://github.com/swiftlang/swift-evolution/blob/main/proposals/0450-swiftpm-package-traits.md)
+in your `Package.swift` to enable dependent packages to enable using SQLCipher rather than SQLite3.
+
+```swift
+// swift-tools-version:6.1
+import PackageDescription
+
+let package = Package(name: "your-middleware",
+    products: [
+        .library(name: "NeatORM", targets: ["NeatORM"])
+    ],
+    traits: [
+        .trait(name: "SQLCipher", description: "Use the SQLCipher library rather than the vendored SQLite")
+    ],
+    depedencies: [
+        .package(url: "https://github.com/skiptools/swift-sqlcipher.git", from: "1.4.0")
+    ],
+    targets: [
+        .target(name: "NeatORM", dependencies: [
+            // target only depends on SQLCipher when the "SQLCipher" trait is activated by a dependent package
+            // otherwise it will default to using the system "SQLite3" framework
+            .product(name: "SQLCipher", package: "swift-sqlcipher", condition: .when(traits: ["SQLCipher"]))
+        ])
+    ]
+)
+```
+
+Then throughout your package's code, wherever you `import SQLite3`,
+you would change this to conditionally `import SQLCipher` if it is available
+(i.e., if the trait is activated by the client package):
+
+```swift
+#if canImport(SQLCipher)
+import SQLCipher
+#else
+import SQLite3
+#endif
+```
+
+Clients of your package would then enable the SQLCipher trait in their
+Package.swift's dependencies:
+
+```swift
+dependencies: [
+    // turn on SQLCipher support for NeatORM
+    .package(url: "https://github.com/your-middleware/NeatORM.git", from: "1.2.3", traits: ["SQLCipher"])
+]
+```
+
+In this way, your package can be parameterized to work with either the
+built-in vendored SQLite3 package or with the SQLCipher package
+depending on the needs of the developer.
 
 ## Communication
 
