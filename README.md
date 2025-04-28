@@ -2175,6 +2175,22 @@ import SQLite3
 #endif
 ```
 
+Since the C API surface of the SQLCipher package is a superset of the SQLite3 framework,
+all the same `sqlite3_*` functions will behave identically. However, you may want to also
+create additional conditionally-enabled functionality in your own package, such as
+for key management or FTS5 search index handling. For example:
+
+```swift
+#if canImport(SQLCipher)
+import SQLCipher
+
+extension Connection {
+    func updateEncryptionKey(newKey: String) throws {
+        try checkError(sqlite3_rekey_v2(dbHandle, newKey, Int32(newKey.utf8.count)))
+    }
+}
+```
+
 Clients of your package would then enable the SQLCipher trait in their
 Package.swift's dependencies:
 
@@ -2191,8 +2207,9 @@ depending on the needs of the developer.
 
 ## Communication
 
-[Open an issue]: https://github.com/skiptools/swift-sqlcipher/issues/new
-[Submit a pull request]: https://github.com/skiptools/swift-sqlcipher/pulls
+ - [Browse discussions]: https://github.com/skiptools/swift-sqlcipher/discussions
+ - [Open an issue]: https://github.com/skiptools/swift-sqlcipher/issues/new
+ - [Submit a pull request]: https://github.com/skiptools/swift-sqlcipher/pulls
 
 ## License
 
