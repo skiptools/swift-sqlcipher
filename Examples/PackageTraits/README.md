@@ -121,7 +121,7 @@ It contains a test case:
 
 ```swift
 @Test func testDatabaseIsSQLCipher() async throws {
-    #expect(databaseVersion() == "SQLCipher 4.8.0 community")
+    #expect(databaseVersion() == "SQLCipher 4.9.0 community")
 }
 ```
 
