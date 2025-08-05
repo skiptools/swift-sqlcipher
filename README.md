@@ -2224,12 +2224,14 @@ For a full set of examples, see the [Examples/PackageTraits](./Examples/PackageT
 
 Here are a number of other popular SQLite alternative packages:
 
- - [SQLite.swift](https://github.com/stephencelis/SQLite.swift)
+ - [SQLite.swift]: The root of this fork (non-SQLCipher SQLite3)
+ - [SQLCipher.swift]: Binary SQLCipher.xcframework (Darwin platforms only)
  - [GRDB](https://github.com/groue/GRDB.swift)
- - [swift-toolchain-sqlite](https://github.com/swiftlang/swift-toolchain-sqlite)
  - [FMDB]
+ - [swift-toolchain-sqlite](https://github.com/swiftlang/swift-toolchain-sqlite)
 
 [SQLiteDB]: #sqlitedb
 [SQLite3]: https://www.sqlite.org
 [SQLite.swift]: https://github.com/stephencelis/SQLite.swift
 [FMDB]: https://github.com/ccgus/fmdb
+[SQLCipher.swift]: https://github.com/sqlcipher/SQLCipher.swift
