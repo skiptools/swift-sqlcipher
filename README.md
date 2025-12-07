@@ -14,7 +14,7 @@ library (e.g., Android, Windows).
 ## Features
 
  - A pure-Swift interface
- - Embeds a modern and consistent sqlite ([3.50.4](https://www.sqlite.org/releaselog/3_50_4.html)) and sqlcipher ([4.10.0](https://github.com/sqlcipher/sqlcipher/releases/tag/v4.10.0)) build in the library
+ - Embeds a modern and consistent sqlite ([3.50.4](https://www.sqlite.org/releaselog/3_50_4.html)) and sqlcipher ([4.11.0](https://github.com/sqlcipher/sqlcipher/releases/tag/v4.11.0)) build in the library
  - Works on iOS, macOS, Android, Windows, and Linux
  - A type-safe, optional-aware SQL expression builder
  - A flexible, chainable, lazy-executing query layer
