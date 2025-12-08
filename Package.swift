@@ -65,6 +65,7 @@ let package = Package(
                 .define("HAVE_GETHOSTUUID", to: "0"),
                 .define("HAVE_STDINT_H"),
                 .define("SQLCIPHER_CRYPTO_LIBTOMCRYPT"),
+                .define("SQLCIPHER_CRYPTO_CUSTOM", to: "sqlcipher_ltc_setup"),
             ],
             linkerSettings: [.linkedLibrary("log", .when(platforms: [.android]))]),
         .testTarget(

@@ -14,10 +14,32 @@ SQLCIPHER_VERSION=$(git -c 'versionsort.suffix=-' ls-remote --tags --sort='v:ref
 # might need to first run: brew install libtomcrypt
 
 cd `mktemp -d`
-wget ${SQLCIPHER_REPO}/archive/refs/tags/v${SQLCIPHER_VERSION}.tar.gz
-tar xvzf v${SQLCIPHER_VERSION}.tar.gz
-./sqlcipher-${SQLCIPHER_VERSION}/configure --with-tempstore=yes CFLAGS="-DSQLCIPHER_CRYPTO_LIBTOMCRYPT -DSQLITE_HAS_CODEC -DSQLITE_EXTRA_INIT=sqlcipher_extra_init -DSQLITE_EXTRA_SHUTDOWN=sqlcipher_extra_shutdown -I/opt/homebrew/include/ -L/opt/homebrew/lib/"
-make sqlite3.c
+TARBALL=v${SQLCIPHER_VERSION}.tar.gz
+wget ${SQLCIPHER_REPO}/archive/refs/tags/${TARBALL}
+tar xvzf ${TARBALL}
+
+# need to also grab the old crypto_libtomcrypt.c due to https://github.com/sqlcipher/sqlcipher/issues/564
+#wget https://raw.githubusercontent.com/sqlcipher/sqlcipher/refs/tags/v4.11.0/src/crypto_libtomcrypt.c
+cp ${OLDPWD}/Sources/SQLCipher/crypto_libtomcrypt.c .
+
+./sqlcipher-${SQLCIPHER_VERSION}/configure --with-tempstore=yes CFLAGS="-DSQLCIPHER_CRYPTO_LIBTOMCRYPT -DSQLCIPHER_CRYPTO_CUSTOM=sqlcipher_ltc_setup -DSQLITE_HAS_CODEC -DSQLITE_EXTRA_INIT=sqlcipher_extra_init -DSQLITE_EXTRA_SHUTDOWN=sqlcipher_extra_shutdown -I/opt/homebrew/include/ -L/opt/homebrew/lib/"
+make sqlite3.c EXTRA_SRC=crypto_libtomcrypt.c
+
+# insert some pragmas that quiesce warnings when building with SwiftPM
+mv sqlite3.c sqlite.c.orig
+
+cat << 'EOF' > sqlite3.c
+// pragmas added for swift-sqlcipher
+#pragma GCC diagnostic push
+
+// added for: Implicit conversion loses integer precision: 'i64' (aka 'long long') to 'int'
+#pragma GCC diagnostic ignored "-Wshorten-64-to-32"
+
+// added for: Ambiguous expansion of macro 'MAX'
+#pragma GCC diagnostic ignored "-Wambiguous-macro"
+EOF
+
+cat sqlite.c.orig >> sqlite3.c
 
 cp -v sqlite3.c sqlite3.h ${OLDPWD}/Sources/SQLCipher/sqlite/
 
