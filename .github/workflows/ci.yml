@@ -17,7 +17,7 @@ jobs:
           sudo rm -rf /usr/share/dotnet /opt/ghc /opt/hostedtoolcache/CodeQL
           docker image prune --all --force
           docker builder prune -a
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: "Test Swift Package Android"
         uses: skiptools/swift-android-action@v2
       - name: "Test Swift Package Linux"
@@ -25,7 +25,7 @@ jobs:
   macos-ios:
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: "Test Swift Package macOS"
         run: swift test
       - name: "Test Swift Package iOS"
@@ -37,6 +37,6 @@ jobs:
         with:
           branch: swift-6.2-release
           tag: 6.2-RELEASE
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - run: swift test
 
