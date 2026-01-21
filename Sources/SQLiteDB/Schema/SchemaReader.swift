@@ -125,7 +125,7 @@ public class SchemaReader {
     }
 }
 
-private enum SchemaTable {
+private enum SchemaTable: Sendable {
     private static let name = Table("sqlite_schema", database: "main")
     private static let tempName = Table("sqlite_schema", database: "temp")
     // legacy names (< 3.33.0)

@@ -147,11 +147,11 @@ class CustomAggregationTests: SQLiteTestCase {
 /// This class is used to test that aggregation state variables
 /// can be reference types and are properly memory managed when
 /// crossing the Swift<->C boundary multiple times.
-class TestObject {
-    static var inits = 0
-    static var deinits = 0
+final class TestObject: @unsafe Sendable {
+    nonisolated(unsafe) static var inits = 0
+    nonisolated(unsafe) static var deinits = 0
 
-    var value: Int64
+    nonisolated(unsafe) var value: Int64
     init(value: Int64) {
         self.value = value
         TestObject.inits += 1

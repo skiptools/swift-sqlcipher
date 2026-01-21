@@ -39,13 +39,13 @@ public struct ObjectDefinition: Equatable {
 
 // https://sqlite.org/syntax/column-def.html
 // column-name -> type-name -> column-constraint*
-public struct ColumnDefinition: Equatable {
+public struct ColumnDefinition: Equatable, Sendable {
 
     // The type affinity of a column is the recommended type for data stored in that column.
     // The important idea here is that the type is recommended, not required. Any column can still
     // store any type of data. It is just that some columns, given the choice, will prefer to use one
     // storage class over another. The preferred storage class for a column is called its "affinity".
-    public enum Affinity: String, CustomStringConvertible, CaseIterable {
+    public enum Affinity: String, CustomStringConvertible, CaseIterable, Sendable {
         case INTEGER
         case NUMERIC
         case REAL
@@ -73,7 +73,7 @@ public struct ColumnDefinition: Equatable {
         }
     }
 
-    public enum OnConflict: String, CaseIterable {
+    public enum OnConflict: String, CaseIterable, Sendable {
         case ROLLBACK
         case ABORT
         case FAIL
@@ -86,7 +86,7 @@ public struct ColumnDefinition: Equatable {
         }
     }
 
-    public struct PrimaryKey: Equatable {
+    public struct PrimaryKey: Equatable, Sendable {
         let autoIncrement: Bool
         let onConflict: OnConflict?
 
@@ -116,7 +116,7 @@ public struct ColumnDefinition: Equatable {
         }
     }
 
-    public struct ForeignKey: Equatable {
+    public struct ForeignKey: Equatable, Sendable {
         let table: String
         let column: String
         let primaryKey: String?
@@ -151,7 +151,7 @@ public struct ColumnDefinition: Equatable {
     }
 }
 
-public enum LiteralValue: Equatable, CustomStringConvertible {
+public enum LiteralValue: Equatable, CustomStringConvertible, Sendable {
     // swiftlint:disable force_try
     private static let singleQuote = try! NSRegularExpression(pattern: "^'(.*)'$")
     private static let doubleQuote = try! NSRegularExpression(pattern: "^\"(.*)\"$")
@@ -233,7 +233,7 @@ public enum LiteralValue: Equatable, CustomStringConvertible {
 
 // https://sqlite.org/lang_createindex.html
 // schema-name.index-name ON table-name ( indexed-column+ ) WHERE expr
-public struct IndexDefinition: Equatable {
+public struct IndexDefinition: Equatable, Sendable {
     // SQLite supports index names up to 64 characters.
     static let maxIndexLength = 64
 
@@ -242,7 +242,7 @@ public struct IndexDefinition: Equatable {
     static let orderRe = try! NSRegularExpression(pattern: "\"?(\\w+)\"? DESC")
     // swiftlint:enable force_try
 
-    public enum Order: String { case ASC, DESC }
+    public enum Order: String, Sendable { case ASC, DESC }
 
     public init(table: String, name: String, unique: Bool = false, columns: [String], `where`: String? = nil, orders: [String: Order]? = nil) {
         self.table = table

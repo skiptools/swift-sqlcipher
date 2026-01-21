@@ -292,7 +292,7 @@ class ConnectionTests: SQLiteTestCase {
         assertSQL("RELEASE SAVEPOINT '1'", 0)
     }
 
-    func test_updateHook_setsUpdateHook_withInsert() throws {
+    @MainActor func test_updateHook_setsUpdateHook_withInsert() throws {
         try async { done in
             db.updateHook { operation, db, table, rowid in
                 XCTAssertEqual(Connection.Operation.insert, operation)
@@ -305,7 +305,7 @@ class ConnectionTests: SQLiteTestCase {
         }
     }
 
-    func test_updateHook_setsUpdateHook_withUpdate() throws {
+    @MainActor func test_updateHook_setsUpdateHook_withUpdate() throws {
         try insertUser("alice")
         try async { done in
             db.updateHook { operation, db, table, rowid in
@@ -319,7 +319,7 @@ class ConnectionTests: SQLiteTestCase {
         }
     }
 
-    func test_updateHook_setsUpdateHook_withDelete() throws {
+    @MainActor func test_updateHook_setsUpdateHook_withDelete() throws {
         try insertUser("alice")
         try async { done in
             db.updateHook { operation, db, table, rowid in
@@ -333,7 +333,7 @@ class ConnectionTests: SQLiteTestCase {
         }
     }
 
-    func test_commitHook_setsCommitHook() throws {
+    @MainActor func test_commitHook_setsCommitHook() throws {
         try async { done in
             db.commitHook {
                 done()
@@ -345,7 +345,7 @@ class ConnectionTests: SQLiteTestCase {
         }
     }
 
-    func test_rollbackHook_setsRollbackHook() throws {
+    @MainActor func test_rollbackHook_setsRollbackHook() throws {
         try async { done in
             db.rollbackHook(done)
             do {
@@ -359,7 +359,7 @@ class ConnectionTests: SQLiteTestCase {
         }
     }
 
-    func test_commitHook_withRollback_rollsBack() throws {
+    @MainActor func test_commitHook_withRollback_rollsBack() throws {
         try async { done in
             db.commitHook {
                 throw NSError(domain: "com.stephencelis.SQLiteTests", code: 1, userInfo: nil)

@@ -70,7 +70,7 @@ public struct SQLExpression<Datatype>: ExpressionType {
 
 }
 
-public protocol Expressible {
+public protocol Expressible: Sendable {
 
     var expression: SQLExpression<Void> { get }
 
