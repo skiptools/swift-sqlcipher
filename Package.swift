@@ -1,4 +1,4 @@
-// swift-tools-version:6.1
+// swift-tools-version:6.2
 import PackageDescription
 
 /// Compile-time options
@@ -305,7 +305,14 @@ let package = Package(
             name: "SQLiteDB",
             dependencies: [.target(name: "SQLCipher")],
             cSettings: [.define("SQLITE_HAS_CODEC")],
-            swiftSettings: [.define("SQLITE_SWIFT_SQLCIPHER")]
+            swiftSettings: [
+                .define("SQLITE_SWIFT_SQLCIPHER"),
+                .enableUpcomingFeature("DisableOutwardActorInference"),
+                .enableUpcomingFeature("GlobalActorIsolatedTypesUsability"),
+                .enableUpcomingFeature("InferIsolatedConformances"),
+                .enableUpcomingFeature("InferSendableFromCaptures"),
+                .enableUpcomingFeature("NonisolatedNonsendingByDefault")
+            ]
         ),
         .target(
             name: "SQLCipher",
