@@ -1,12 +1,12 @@
 import Foundation
 
 /// See https://www.sqlite.org/uri.html
-public enum URIQueryParameter: CustomStringConvertible {
-    public enum FileMode: String {
+public enum URIQueryParameter: CustomStringConvertible, Sendable {
+    public enum FileMode: String, Sendable {
         case readOnly = "ro", readWrite = "rw", readWriteCreate = "rwc", memory
     }
 
-    public enum CacheMode: String {
+    public enum CacheMode: String, Sendable {
         case shared, `private`
     }
 
