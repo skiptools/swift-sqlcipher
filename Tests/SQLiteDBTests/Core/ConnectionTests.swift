@@ -427,20 +427,26 @@ class ConnectionTests: SQLiteTestCase {
     #endif
 
     func test_concurrent_access_single_connection() throws {
-        // test can fail on iOS/tvOS 9.x: SQLite compile-time differences?
-        guard #available(iOS 10.0, OSX 10.10, tvOS 10.0, watchOS 2.2, *) else { return }
-
         let conn = try Connection("\(NSTemporaryDirectory())/\(UUID().uuidString)")
         try conn.execute("DROP TABLE IF EXISTS test; CREATE TABLE test(value);")
         try conn.run("INSERT INTO test(value) VALUES(?)", 0)
         let queue = DispatchQueue(label: "Readers", attributes: [.concurrent])
 
+        struct ConnectionWrapper: @unchecked Sendable {
+            let conn: Connection
+
+            func callScalar() {
+                _ = try! conn.scalar("SELECT value FROM test")
+            }
+        }
+
+        let wrapper = ConnectionWrapper(conn: conn)
         let nReaders = 5
         let semaphores =  Array(repeating: DispatchSemaphore(value: 100), count: nReaders)
         for index in 0..<nReaders {
             queue.async {
                 while semaphores[index].signal() == 0 {
-                    _ = try! conn.scalar("SELECT value FROM test")
+                    wrapper.callScalar()
                 }
             }
         }
