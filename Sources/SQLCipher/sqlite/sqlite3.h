@@ -6661,7 +6661,7 @@ SQLITE_API int sqlite3_collation_needed16(
 );
 
 /* BEGIN SQLCIPHER */
-#ifdef SQLITE_HAS_CODEC
+//#ifdef SQLITE_HAS_CODEC
 /*
 ** Specify the key for an encrypted database.  This routine should be
 ** called right after sqlite3_open().
@@ -6717,7 +6717,7 @@ SQLITE_API int sqlite3_rekey_v2(
 SQLITE_API void sqlite3_activate_see(
   const char *zPassPhrase        /* Activation phrase */
 );
-#endif
+//#endif
 /* END SQLCIPHER */
 
 #ifdef SQLITE_ENABLE_CEROD

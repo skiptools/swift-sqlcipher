@@ -1,4 +1,3 @@
-#if SQLITE_SWIFT_SQLCIPHER
 import XCTest
 import SQLiteDB
 import SQLCipher
@@ -115,4 +114,3 @@ class CipherTests: XCTestCase {
         Data((0..<length).map({ _ in UInt8.random(in: (.min)..<(.max)) })) as NSData
     }
 }
-#endif

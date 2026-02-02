@@ -1,4 +1,3 @@
-#if SQLITE_SWIFT_SQLCIPHER
 import SQLCipher
 
 
@@ -112,4 +111,3 @@ extension Connection {
         _ = try scalar("SELECT count(*) FROM sqlite_master;")
     }
 }
-#endif

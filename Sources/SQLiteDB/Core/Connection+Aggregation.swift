@@ -1,13 +1,5 @@
 import Foundation
-#if SQLITE_SWIFT_STANDALONE
-import sqlite3
-#elseif SQLITE_SWIFT_SQLCIPHER
 import SQLCipher
-#elseif os(Linux) || os(Windows) || os(Android)
-import CSQLite
-#else
-import SQLite3
-#endif
 
 extension Connection {
     private typealias Aggregate = @convention(block) (Int, Context, Int32, Argv) -> Void

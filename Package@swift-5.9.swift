@@ -24,8 +24,7 @@ let package = Package(
         .target(
             name: "SQLiteDB",
             dependencies: [.target(name: "SQLCipher")],
-            cSettings: [.define("SQLITE_HAS_CODEC")],
-            swiftSettings: [.define("SQLITE_SWIFT_SQLCIPHER")]
+            cSettings: [.define("SQLITE_HAS_CODEC")]
         ),
         .target(
             name: "SQLCipher",
@@ -71,8 +70,7 @@ let package = Package(
         .testTarget(
             name: "SQLiteDBTests",
             dependencies: ["SQLiteDB"],
-            resources: [.process("Resources")],
-            swiftSettings: [.define("SQLITE_SWIFT_SQLCIPHER")]
+            resources: [.process("Resources")]
         )
     ]
 )

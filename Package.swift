@@ -1,4 +1,4 @@
-// swift-tools-version:6.2
+// swift-tools-version:6.1
 import PackageDescription
 
 /// Compile-time options
@@ -90,6 +90,11 @@ let features: [CSetting] = [
 
 let sqlcipherConfiguration: [CSetting] = [
     .headerSearchPath("libtomcrypt/headers"),
+    .define("SQLITE_HAS_CODEC"),
+    .define("SQLCIPHER_CRYPTO_LIBTOMCRYPT"),
+    .define("SQLCIPHER_CRYPTO_CUSTOM", to: "sqlcipher_ltc_setup"),
+    .define("SQLITE_EXTRA_INIT", to: "sqlcipher_extra_init"),
+    .define("SQLITE_EXTRA_SHUTDOWN", to: "sqlcipher_extra_shutdown"),
     .define("SQLITE_ENABLE_API_ARMOR"),
     .define("SQLITE_ENABLE_MEMORY_MANAGEMENT"),
     .define("SQLITE_ENABLE_UNKNOWN_SQL_FUNCTION"),
@@ -97,15 +102,10 @@ let sqlcipherConfiguration: [CSetting] = [
     .define("SQLITE_MAX_VARIABLE_NUMBER", to: "250000"),
     .define("SQLITE_SECURE_DELETE"),
     .define("SQLITE_USE_URI"),
-    .define("SQLITE_HAS_CODEC"),
     .define("SQLITE_HOMEGROWN_RECURSIVE_MUTEX"), // needed or we see hangs in test cases
     .define("SQLITE_TEMP_STORE", to: "2"),
-    .define("SQLITE_EXTRA_INIT", to: "sqlcipher_extra_init"),
-    .define("SQLITE_EXTRA_SHUTDOWN", to: "sqlcipher_extra_shutdown"),
     .define("HAVE_GETHOSTUUID", to: "0"),
     .define("HAVE_STDINT_H"),
-    .define("SQLCIPHER_CRYPTO_LIBTOMCRYPT"),
-    .define("SQLCIPHER_CRYPTO_CUSTOM", to: "sqlcipher_ltc_setup"),
 ]
 
 let package = Package(
@@ -280,7 +280,7 @@ let package = Package(
             "ENABLE_DBSTAT_VTAB",
             "ENABLE_SESSION",
             "ENABLE_PREUPDATE_HOOK",
-            "THREADSAFE_2",
+            "THREADSAFE_1",
             "DEFAULT_MEMSTATUS_0",
             "DEFAULT_WAL_SYNCHRONOUS_1",
             "LIKE_DOESNT_MATCH_BLOBS",
@@ -302,30 +302,24 @@ let package = Package(
     ],
     targets: [
         .target(
-            name: "SQLiteDB",
-            dependencies: [.target(name: "SQLCipher")],
-            cSettings: [.define("SQLITE_HAS_CODEC")],
-            swiftSettings: [
-                .define("SQLITE_SWIFT_SQLCIPHER"),
-                .enableUpcomingFeature("DisableOutwardActorInference"),
-                .enableUpcomingFeature("GlobalActorIsolatedTypesUsability"),
-                .enableUpcomingFeature("InferIsolatedConformances"),
-                .enableUpcomingFeature("InferSendableFromCaptures"),
-                .enableUpcomingFeature("NonisolatedNonsendingByDefault")
-            ]
-        ),
-        .target(
             name: "SQLCipher",
             sources: ["sqlite", "libtomcrypt"],
             publicHeadersPath: "sqlite",
-            cSettings:
-                compileTimeOptions + platformConfiguration + features + sqlcipherConfiguration,
+            cSettings: compileTimeOptions + platformConfiguration + features + sqlcipherConfiguration,
             linkerSettings: [.linkedLibrary("log", .when(platforms: [.android]))]),
+        .testTarget(
+            name: "SQLCipherTests",
+            dependencies: ["SQLCipher"]
+        ),
+        .target(
+            name: "SQLiteDB",
+            dependencies: [.target(name: "SQLCipher")],
+            cSettings: [.define("SQLITE_HAS_CODEC")]
+        ),
         .testTarget(
             name: "SQLiteDBTests",
             dependencies: ["SQLiteDB"],
-            resources: [.process("Resources")],
-            swiftSettings: [.define("SQLITE_SWIFT_SQLCIPHER")]
-        )
+            resources: [.process("Resources")]
+        ),
     ]
 )

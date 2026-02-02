@@ -64,11 +64,7 @@ let package = Package(
 The `SQLMiddleware` module has just a single top-level function `middlewareDatabaseType()` that will return either "SQLCipher <version>" or "SQLite3 <version>" depending on whether it was included with the "SQLCipher" trait.
  
  ```swift
- #if canImport(SQLCipher)
  import SQLCipher
- #else
- import SQLite3
- #endif
  
  public func databaseVersion() -> String? {
      #if canImport(SQLCipher)
