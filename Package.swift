@@ -314,7 +314,10 @@ let package = Package(
         .target(
             name: "SQLiteDB",
             dependencies: [.target(name: "SQLCipher")],
-            cSettings: [.define("SQLITE_HAS_CODEC")]
+            cSettings: [.define("SQLITE_HAS_CODEC")],
+            swiftSettings: [
+                .enableUpcomingFeature("NonisolatedNonsendingByDefault")
+            ]
         ),
         .testTarget(
             name: "SQLiteDBTests",

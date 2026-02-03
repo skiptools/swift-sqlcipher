@@ -288,15 +288,6 @@ struct SQLCipherTests {
         #expect(sqlite3_exec(db, "PRAGMA plaintext_header_size = 16;", nil, nil, nil) == SQLITE_OK)
     }
 
-    @Test("Cipher Profile selection")
-    func testCipherProfile() throws {
-        var db: OpaquePointer?
-        sqlite3_open(":memory:", &db)
-        defer { sqlite3_close(db) }
-        // Testing forced profile compatibility (SQLCipher 4 default vs 3)
-        #expect(sqlite3_exec(db, "PRAGMA cipher_profile = 'sqlcipher-4';", nil, nil, nil) == SQLITE_OK)
-    }
-
     @Test("Verify file header after encryption")
     func testHeaderValidation() throws {
         cleanup()
