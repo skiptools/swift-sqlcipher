@@ -304,7 +304,7 @@ public struct IndexDefinition: Equatable, Sendable {
     }
 }
 
-public struct ForeignKeyError: CustomStringConvertible {
+public struct ForeignKeyError: CustomStringConvertible, Sendable {
     public let from: String
     public let rowId: Int64
     public let to: String
