@@ -316,10 +316,6 @@ let package = Package(
             dependencies: [.target(name: "SQLCipher")],
             cSettings: [.define("SQLITE_HAS_CODEC")],
             swiftSettings: [
-                .enableUpcomingFeature("DisableOutwardActorInference"),
-                .enableUpcomingFeature("GlobalActorIsolatedTypesUsability"),
-                .enableUpcomingFeature("InferIsolatedConformances"),
-                .enableUpcomingFeature("InferSendableFromCaptures"),
                 .enableUpcomingFeature("NonisolatedNonsendingByDefault")
             ]
         ),
