@@ -295,7 +295,6 @@ let package = Package(
             "MAX_EXPR_DEPTH_0",
             "OMIT_DEPRECATED",
             "OMIT_PROGRESS_CALLBACK",
-            "OMIT_SHARED_CACHE",
             "USE_ALLOCA",
             "STRICT_SUBTYPE_1",
             "ENABLE_CARRAY",
