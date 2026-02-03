@@ -62,6 +62,10 @@ let features: [CSetting] = [
     // https://sqlite.org/dbstat.html
     .define("SQLITE_ENABLE_DBSTAT_VTAB", .when(traits: ["ENABLE_DBSTAT_VTAB"])),
     // https://sqlite.org/fts3.html
+    .define("SQLITE_ENABLE_FTS3", .when(traits: ["ENABLE_FTS3"])),
+    .define("SQLITE_ENABLE_FTS3_PARENTHESIS", .when(traits: ["ENABLE_FTS3"])),
+    .define("SQLITE_ENABLE_FTS3_TOKENZIER", .when(traits: ["ENABLE_FTS3"])),
+    // https://sqlite.org/fts4.html
     .define("SQLITE_ENABLE_FTS4", .when(traits: ["ENABLE_FTS4"])),
     // https://sqlite.org/fts5.html
     .define("SQLITE_ENABLE_FTS5", .when(traits: ["ENABLE_FTS5"])),
@@ -223,8 +227,12 @@ let package = Package(
             description: "Enables the dbstat virtual table"
         ),
         .trait(
+            name: "ENABLE_FTS3",
+            description: "Enables version 3 of the full-text search engine (fts3)"
+        ),
+        .trait(
             name: "ENABLE_FTS4",
-            description: "Enables versions 3 and 4 of the full-text search engine (fts3 and fts4)"
+            description: "Enables version 4 of the full-text search engine (fts4)"
         ),
         .trait(
             name: "ENABLE_FTS5",
@@ -291,6 +299,8 @@ let package = Package(
             "USE_ALLOCA",
             "STRICT_SUBTYPE_1",
             "ENABLE_CARRAY",
+            "ENABLE_FTS3",
+            "ENABLE_FTS4",
             "ENABLE_FTS5",
             "ENABLE_MATH_FUNCTIONS",
             "ENABLE_PERCENTILE",
