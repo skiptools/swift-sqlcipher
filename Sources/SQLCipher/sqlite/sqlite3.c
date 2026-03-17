@@ -8,7 +8,7 @@
 #pragma GCC diagnostic ignored "-Wambiguous-macro"
 /******************************************************************************
 ** This file is an amalgamation of many separate C source files from SQLite
-** version 3.51.2.  By combining all the individual C code files into this
+** version 3.51.3.  By combining all the individual C code files into this
 ** single large file, the entire code can be compiled as a single translation
 ** unit.  This allows many compilers to do optimizations that would not be
 ** possible if the files were compiled separately.  Performance improvements
@@ -26,7 +26,7 @@
 ** separate file. This file contains only code for the core SQLite library.
 **
 ** The content in this amalgamation comes from Fossil check-in
-** b270f8339eb13b504d0b2ba154ebca966b7d with changes in files:
+** 737ae4a34738ffa0c3ff7f9bb18df914dd1c with changes in files:
 **
 **    .fossil-settings/binary-glob
 **    .fossil-settings/empty-dirs
@@ -504,12 +504,12 @@ extern "C" {
 ** [sqlite3_libversion_number()], [sqlite3_sourceid()],
 ** [sqlite_version()] and [sqlite_source_id()].
 */
-#define SQLITE_VERSION        "3.51.2"
-#define SQLITE_VERSION_NUMBER 3051002
-#define SQLITE_SOURCE_ID      "2026-01-09 17:27:48 b270f8339eb13b504d0b2ba154ebca966b7dde08e40c3ed7d559749818cbalt1"
+#define SQLITE_VERSION        "3.51.3"
+#define SQLITE_VERSION_NUMBER 3051003
+#define SQLITE_SOURCE_ID      "2026-03-13 10:38:09 737ae4a34738ffa0c3ff7f9bb18df914dd1cad163f28fd6b6e114a344fe6alt1"
 #define SQLITE_SCM_BRANCH     "branch-3.51"
-#define SQLITE_SCM_TAGS       "release version-3.51.2"
-#define SQLITE_SCM_DATETIME   "2026-01-09T17:27:48.405Z"
+#define SQLITE_SCM_TAGS       "release version-3.51.3"
+#define SQLITE_SCM_DATETIME   "2026-03-13T10:38:09.694Z"
 
 /*
 ** CAPI3REF: Run-Time Library Version Numbers
@@ -14432,6 +14432,27 @@ struct fts5_api {
 #define SQLITE_MIN_LENGTH 30   /* Minimum value for the length limit */
 
 /*
+** Maximum size of any single memory allocation.
+**
+** This is not a limit on the total amount of memory used.  This is
+** a limit on the size parameter to sqlite3_malloc() and sqlite3_realloc().
+**
+** The upper bound is slightly less than 2GiB:  0x7ffffeff == 2,147,483,391
+** This provides a 256-byte safety margin for defense against 32-bit
+** signed integer overflow bugs when computing memory allocation sizes.
+** Paranoid applications might want to reduce the maximum allocation size
+** further for an even larger safety margin.  0x3fffffff or 0x0fffffff
+** or even smaller would be reasonable upper bounds on the size of a memory
+** allocations for most applications.
+*/
+#ifndef SQLITE_MAX_ALLOCATION_SIZE
+# define SQLITE_MAX_ALLOCATION_SIZE  2147483391
+#endif
+#if SQLITE_MAX_ALLOCATION_SIZE>2147483391
+# error Maximum size for SQLITE_MAX_ALLOCATION_SIZE is 2147483391
+#endif
+
+/*
 ** This is the maximum number of
 **
 **    * Columns in a table
@@ -21778,6 +21799,7 @@ SQLITE_PRIVATE Select *sqlite3SelectNew(Parse*,ExprList*,SrcList*,Expr*,ExprList
                          Expr*,ExprList*,u32,Expr*);
 SQLITE_PRIVATE void sqlite3SelectDelete(sqlite3*, Select*);
 SQLITE_PRIVATE void sqlite3SelectDeleteGeneric(sqlite3*,void*);
+SQLITE_PRIVATE void sqlite3SelectCheckOnClauses(Parse *pParse, Select *pSelect);
 SQLITE_PRIVATE Table *sqlite3SrcListLookup(Parse*, SrcList*);
 SQLITE_PRIVATE int sqlite3IsReadOnly(Parse*, Table*, Trigger*);
 SQLITE_PRIVATE void sqlite3OpenTable(Parse*, int iCur, int iDb, Table*, int);
@@ -31448,27 +31470,6 @@ static void mallocWithAlarm(int n, void **pp){
 }
 
 /*
-** Maximum size of any single memory allocation.
-**
-** This is not a limit on the total amount of memory used.  This is
-** a limit on the size parameter to sqlite3_malloc() and sqlite3_realloc().
-**
-** The upper bound is slightly less than 2GiB:  0x7ffffeff == 2,147,483,391
-** This provides a 256-byte safety margin for defense against 32-bit
-** signed integer overflow bugs when computing memory allocation sizes.
-** Paranoid applications might want to reduce the maximum allocation size
-** further for an even larger safety margin.  0x3fffffff or 0x0fffffff
-** or even smaller would be reasonable upper bounds on the size of a memory
-** allocations for most applications.
-*/
-#ifndef SQLITE_MAX_ALLOCATION_SIZE
-# define SQLITE_MAX_ALLOCATION_SIZE  2147483391
-#endif
-#if SQLITE_MAX_ALLOCATION_SIZE>2147483391
-# error Maximum size for SQLITE_MAX_ALLOCATION_SIZE is 2147483391
-#endif
-
-/*
 ** Allocate memory.  This routine is like sqlite3_malloc() except that it
 ** assumes the memory subsystem has already been initialized.
 */
@@ -31691,8 +31692,7 @@ SQLITE_PRIVATE void *sqlite3Realloc(void *pOld, u64 nBytes){
     sqlite3_free(pOld); /* IMP: R-26507-47431 */
     return 0;
   }
-  if( nBytes>=0x7fffff00 ){
-    /* The 0x7ffff00 limit term is explained in comments on sqlite3Malloc() */
+  if( nBytes>SQLITE_MAX_ALLOCATION_SIZE ){
     return 0;
   }
   nOld = sqlite3MallocSize(pOld);
@@ -69338,68 +69338,82 @@ static int walCheckpoint(
      && (rc = walBusyLock(pWal,xBusy,pBusyArg,WAL_READ_LOCK(0),1))==SQLITE_OK
     ){
       u32 nBackfill = pInfo->nBackfill;
-      pInfo->nBackfillAttempted = mxSafeFrame; SEH_INJECT_FAULT;
+      WalIndexHdr *pLive = (WalIndexHdr*)walIndexHdr(pWal);
 
-      /* Sync the WAL to disk */
-      rc = sqlite3OsSync(pWal->pWalFd, CKPT_SYNC_FLAGS(sync_flags));
+      /* Now that read-lock slot 0 is locked, check that the wal has not been
+      ** wrapped since the header was read for this checkpoint. If it was, then
+      ** there was no work to do anyway.  In this case the
+      ** (pInfo->nBackfill<pWal->hdr.mxFrame) test above only passed because
+      ** pInfo->nBackfill had already been set to 0 by the writer that wrapped
+      ** the wal file. It would also be dangerous to proceed, as there may be
+      ** fewer than pWal->hdr.mxFrame valid frames in the wal file.  */
+      int bChg = memcmp(pLive->aSalt, pWal->hdr.aSalt, sizeof(pWal->hdr.aSalt));
+      if( 0==bChg ){
+        pInfo->nBackfillAttempted = mxSafeFrame; SEH_INJECT_FAULT;
 
-      /* If the database may grow as a result of this checkpoint, hint
-      ** about the eventual size of the db file to the VFS layer.
-      */
-      if( rc==SQLITE_OK ){
-        i64 nReq = ((i64)mxPage * szPage);
-        i64 nSize;                    /* Current size of database file */
-        sqlite3OsFileControl(pWal->pDbFd, SQLITE_FCNTL_CKPT_START, 0);
-        rc = sqlite3OsFileSize(pWal->pDbFd, &nSize);
-        if( rc==SQLITE_OK && nSize<nReq ){
-          if( (nSize+65536+(i64)pWal->hdr.mxFrame*szPage)<nReq ){
-            /* If the size of the final database is larger than the current
-            ** database plus the amount of data in the wal file, plus the
-            ** maximum size of the pending-byte page (65536 bytes), then
-            ** must be corruption somewhere.  */
-            rc = SQLITE_CORRUPT_BKPT;
-          }else{
-            sqlite3OsFileControlHint(pWal->pDbFd, SQLITE_FCNTL_SIZE_HINT,&nReq);
-          }
-        }
+        /* Sync the WAL to disk */
+        rc = sqlite3OsSync(pWal->pWalFd, CKPT_SYNC_FLAGS(sync_flags));
 
-      }
-
-      /* Iterate through the contents of the WAL, copying data to the db file */
-      while( rc==SQLITE_OK && 0==walIteratorNext(pIter, &iDbpage, &iFrame) ){
-        i64 iOffset;
-        assert( walFramePgno(pWal, iFrame)==iDbpage );
-        SEH_INJECT_FAULT;
-        if( AtomicLoad(&db->u1.isInterrupted) ){
-          rc = db->mallocFailed ? SQLITE_NOMEM_BKPT : SQLITE_INTERRUPT;
-          break;
-        }
-        if( iFrame<=nBackfill || iFrame>mxSafeFrame || iDbpage>mxPage ){
-          continue;
-        }
-        iOffset = walFrameOffset(iFrame, szPage) + WAL_FRAME_HDRSIZE;
-        /* testcase( IS_BIG_INT(iOffset) ); // requires a 4GiB WAL file */
-        rc = sqlite3OsRead(pWal->pWalFd, zBuf, szPage, iOffset);
-        if( rc!=SQLITE_OK ) break;
-        iOffset = (iDbpage-1)*(i64)szPage;
-        testcase( IS_BIG_INT(iOffset) );
-        rc = sqlite3OsWrite(pWal->pDbFd, zBuf, szPage, iOffset);
-        if( rc!=SQLITE_OK ) break;
-      }
-      sqlite3OsFileControl(pWal->pDbFd, SQLITE_FCNTL_CKPT_DONE, 0);
-
-      /* If work was actually accomplished... */
-      if( rc==SQLITE_OK ){
-        if( mxSafeFrame==walIndexHdr(pWal)->mxFrame ){
-          i64 szDb = pWal->hdr.nPage*(i64)szPage;
-          testcase( IS_BIG_INT(szDb) );
-          rc = sqlite3OsTruncate(pWal->pDbFd, szDb);
-          if( rc==SQLITE_OK ){
-            rc = sqlite3OsSync(pWal->pDbFd, CKPT_SYNC_FLAGS(sync_flags));
-          }
-        }
+        /* If the database may grow as a result of this checkpoint, hint
+        ** about the eventual size of the db file to the VFS layer.
+        */
         if( rc==SQLITE_OK ){
-          AtomicStore(&pInfo->nBackfill, mxSafeFrame); SEH_INJECT_FAULT;
+          i64 nReq = ((i64)mxPage * szPage);
+          i64 nSize;                    /* Current size of database file */
+          sqlite3OsFileControl(pWal->pDbFd, SQLITE_FCNTL_CKPT_START, 0);
+          rc = sqlite3OsFileSize(pWal->pDbFd, &nSize);
+          if( rc==SQLITE_OK && nSize<nReq ){
+            if( (nSize+65536+(i64)pWal->hdr.mxFrame*szPage)<nReq ){
+              /* If the size of the final database is larger than the current
+              ** database plus the amount of data in the wal file, plus the
+              ** maximum size of the pending-byte page (65536 bytes), then
+              ** must be corruption somewhere.  */
+              rc = SQLITE_CORRUPT_BKPT;
+            }else{
+              sqlite3OsFileControlHint(
+                  pWal->pDbFd, SQLITE_FCNTL_SIZE_HINT, &nReq);
+            }
+          }
+
+        }
+
+        /* Iterate through the contents of the WAL, copying data to the
+        ** db file */
+        while( rc==SQLITE_OK && 0==walIteratorNext(pIter, &iDbpage, &iFrame) ){
+          i64 iOffset;
+          assert( walFramePgno(pWal, iFrame)==iDbpage );
+          SEH_INJECT_FAULT;
+          if( AtomicLoad(&db->u1.isInterrupted) ){
+            rc = db->mallocFailed ? SQLITE_NOMEM_BKPT : SQLITE_INTERRUPT;
+            break;
+          }
+          if( iFrame<=nBackfill || iFrame>mxSafeFrame || iDbpage>mxPage ){
+            continue;
+          }
+          iOffset = walFrameOffset(iFrame, szPage) + WAL_FRAME_HDRSIZE;
+          /* testcase( IS_BIG_INT(iOffset) ); // requires a 4GiB WAL file */
+          rc = sqlite3OsRead(pWal->pWalFd, zBuf, szPage, iOffset);
+          if( rc!=SQLITE_OK ) break;
+          iOffset = (iDbpage-1)*(i64)szPage;
+          testcase( IS_BIG_INT(iOffset) );
+          rc = sqlite3OsWrite(pWal->pDbFd, zBuf, szPage, iOffset);
+          if( rc!=SQLITE_OK ) break;
+        }
+        sqlite3OsFileControl(pWal->pDbFd, SQLITE_FCNTL_CKPT_DONE, 0);
+
+        /* If work was actually accomplished... */
+        if( rc==SQLITE_OK ){
+          if( mxSafeFrame==walIndexHdr(pWal)->mxFrame ){
+            i64 szDb = pWal->hdr.nPage*(i64)szPage;
+            testcase( IS_BIG_INT(szDb) );
+            rc = sqlite3OsTruncate(pWal->pDbFd, szDb);
+            if( rc==SQLITE_OK ){
+              rc = sqlite3OsSync(pWal->pDbFd, CKPT_SYNC_FLAGS(sync_flags));
+            }
+          }
+          if( rc==SQLITE_OK ){
+            AtomicStore(&pInfo->nBackfill, mxSafeFrame); SEH_INJECT_FAULT;
+          }
         }
       }
 
@@ -71457,6 +71471,7 @@ SQLITE_PRIVATE int sqlite3WalCheckpoint(
 
     /* Copy data from the log to the database file. */
     if( rc==SQLITE_OK ){
+      sqlite3FaultSim(660);
       if( pWal->hdr.mxFrame && walPagesize(pWal)!=nBuf ){
         rc = SQLITE_CORRUPT_BKPT;
       }else if( eMode2!=SQLITE_CHECKPOINT_NOOP ){
@@ -77892,7 +77907,7 @@ static int accessPayload(
 
   getCellInfo(pCur);
   aPayload = pCur->info.pPayload;
-  assert( offset+amt <= pCur->info.nPayload );
+  assert( (u64)offset+(u64)amt <= (u64)pCur->info.nPayload );
 
   assert( aPayload > pPage->aData );
   if( (uptr)(aPayload - pPage->aData) > (pBt->usableSize - pCur->info.nLocal) ){
@@ -86427,7 +86442,12 @@ SQLITE_PRIVATE int sqlite3VdbeMemFromBtree(
 ){
   int rc;
   pMem->flags = MEM_Null;
-  if( sqlite3BtreeMaxRecordSize(pCur)<offset+amt ){
+  testcase( amt==SQLITE_MAX_ALLOCATION_SIZE-1 );
+  testcase( amt==SQLITE_MAX_ALLOCATION_SIZE );
+  if( amt>=SQLITE_MAX_ALLOCATION_SIZE ){
+    return SQLITE_NOMEM_BKPT;
+  }
+  if( (u64)amt + (u64)offset > (u64)sqlite3BtreeMaxRecordSize(pCur) ){
     return SQLITE_CORRUPT_BKPT;
   }
   if( SQLITE_OK==(rc = sqlite3VdbeMemClearAndResize(pMem, amt+1)) ){
@@ -93840,7 +93860,7 @@ static int valueFromValueList(
     Mem sMem;     /* Raw content of current row */
     memset(&sMem, 0, sizeof(sMem));
     sz = sqlite3BtreePayloadSize(pRhs->pCsr);
-    rc = sqlite3VdbeMemFromBtreeZeroOffset(pRhs->pCsr,(int)sz,&sMem);
+    rc = sqlite3VdbeMemFromBtreeZeroOffset(pRhs->pCsr,sz,&sMem);
     if( rc==SQLITE_OK ){
       u8 *zBuf = (u8*)sMem.z;
       u32 iSerial;
@@ -109492,6 +109512,7 @@ SQLITE_API void sqlite3pager_reset(Pager *pPager);
 /* end extensions defined in pager.c */
 
 #if !defined (SQLCIPHER_CRYPTO_CC) \
+   && !defined (SQLCIPHER_CRYPTO_LIBTOMCRYPT) \
    && !defined (SQLCIPHER_CRYPTO_OPENSSL) \
    && !defined (SQLCIPHER_CRYPTO_CUSTOM)
 #define SQLCIPHER_CRYPTO_OPENSSL
@@ -109503,7 +109524,7 @@ SQLITE_API void sqlite3pager_reset(Pager *pPager);
 #define CIPHER_STR(s) #s
 
 #ifndef CIPHER_VERSION_NUMBER
-#define CIPHER_VERSION_NUMBER 4.13.0
+#define CIPHER_VERSION_NUMBER 4.14.0
 #endif
 
 #ifndef CIPHER_VERSION_BUILD
@@ -109912,6 +109933,9 @@ int sqlcipher_extra_init(const char* arg) {
 #if defined (SQLCIPHER_CRYPTO_CC)
     extern int sqlcipher_cc_setup(sqlcipher_provider *p);
     sqlcipher_cc_setup(p);
+#elif defined (SQLCIPHER_CRYPTO_LIBTOMCRYPT)
+    extern int sqlcipher_ltc_setup(sqlcipher_provider *p);
+    sqlcipher_ltc_setup(p);
 #elif defined (SQLCIPHER_CRYPTO_OPENSSL)
     extern int sqlcipher_openssl_setup(sqlcipher_provider *p);
     sqlcipher_openssl_setup(p);
@@ -113297,6 +113321,392 @@ end_of_export:
 /* END SQLCIPHER */
 
 /************** End of sqlcipher.c *******************************************/
+/************** Begin file crypto_libtomcrypt.c ******************************/
+/*
+** SQLCipher
+** http://sqlcipher.net
+**
+** Copyright (c) 2008 - 2013, ZETETIC LLC
+** All rights reserved.
+**
+** Redistribution and use in source and binary forms, with or without
+** modification, are permitted provided that the following conditions are met:
+**     * Redistributions of source code must retain the above copyright
+**       notice, this list of conditions and the following disclaimer.
+**     * Redistributions in binary form must reproduce the above copyright
+**       notice, this list of conditions and the following disclaimer in the
+**       documentation and/or other materials provided with the distribution.
+**     * Neither the name of the ZETETIC LLC nor the
+**       names of its contributors may be used to endorse or promote products
+**       derived from this software without specific prior written permission.
+**
+** THIS SOFTWARE IS PROVIDED BY ZETETIC LLC ''AS IS'' AND ANY
+** EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+** WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+** DISCLAIMED. IN NO EVENT SHALL ZETETIC LLC BE LIABLE FOR ANY
+** DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+** (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+** LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+** ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+** (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+** SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+**
+*/
+/* BEGIN SQLCIPHER */
+#ifdef SQLITE_HAS_CODEC
+#ifdef SQLCIPHER_CRYPTO_LIBTOMCRYPT
+/* #include "sqliteInt.h" */
+/* #include "sqlcipher.h" */
+#include <tomcrypt.h>
+
+#define FORTUNA_MAX_SZ 32
+static prng_state prng;
+static volatile unsigned int ltc_init = 0;
+static volatile unsigned int ltc_ref_count = 0;
+
+#define LTC_CIPHER "aes"
+
+static int sqlcipher_ltc_add_random(void *ctx, const void *buffer, int length) {
+  int rc = 0;
+  int data_to_read = length;
+  int block_sz = data_to_read < FORTUNA_MAX_SZ ? data_to_read : FORTUNA_MAX_SZ;
+  const unsigned char * data = (const unsigned char *)buffer;
+
+  sqlcipher_log(SQLCIPHER_LOG_TRACE, SQLCIPHER_LOG_MUTEX, "sqlcipher_ltc_add_random: entering SQLCIPHER_MUTEX_PROVIDER_RAND");
+  sqlite3_mutex_enter(sqlcipher_mutex(SQLCIPHER_MUTEX_PROVIDER_RAND));
+  sqlcipher_log(SQLCIPHER_LOG_TRACE, SQLCIPHER_LOG_MUTEX, "sqlcipher_ltc_add_random: entered SQLCIPHER_MUTEX_PROVIDER_RAND");
+
+  while(data_to_read > 0){
+    rc = fortuna_add_entropy(data, block_sz, &prng);
+    rc = rc != CRYPT_OK ? SQLITE_ERROR : SQLITE_OK;
+    if(rc != SQLITE_OK){
+      break;
+    }
+    data_to_read -= block_sz;
+    data += block_sz;
+    block_sz = data_to_read < FORTUNA_MAX_SZ ? data_to_read : FORTUNA_MAX_SZ;
+  }
+  fortuna_ready(&prng);
+
+  sqlcipher_log(SQLCIPHER_LOG_TRACE, SQLCIPHER_LOG_MUTEX, "sqlcipher_ltc_add_random: leaving SQLCIPHER_MUTEX_PROVIDER_RAND");
+  sqlite3_mutex_leave(sqlcipher_mutex(SQLCIPHER_MUTEX_PROVIDER_RAND));
+  sqlcipher_log(SQLCIPHER_LOG_TRACE, SQLCIPHER_LOG_MUTEX, "sqlcipher_ltc_add_random: left SQLCIPHER_MUTEX_PROVIDER_RAND");
+
+  return rc;
+}
+
+static int sqlcipher_ltc_activate(void *ctx) {
+  unsigned char random_buffer[FORTUNA_MAX_SZ];
+  int bytes = 0;
+
+  sqlcipher_log(SQLCIPHER_LOG_TRACE, SQLCIPHER_LOG_MUTEX, "sqlcipher_ltc_activate: entering SQLCIPHER_MUTEX_PROVIDER_ACTIVATE");
+  sqlite3_mutex_enter(sqlcipher_mutex(SQLCIPHER_MUTEX_PROVIDER_ACTIVATE));
+  sqlcipher_log(SQLCIPHER_LOG_TRACE, SQLCIPHER_LOG_MUTEX, "sqlcipher_ltc_activate: entered SQLCIPHER_MUTEX_PROVIDER_ACTIVATE");
+
+  sqlcipher_memset(random_buffer, 0, FORTUNA_MAX_SZ);
+  if(ltc_init == 0) {
+    if(register_prng(&fortuna_desc) < 0) return SQLITE_ERROR;
+    if(register_cipher(&aes_desc) < 0) return SQLITE_ERROR;
+    if(register_hash(&sha512_desc) < 0) return SQLITE_ERROR;
+    if(register_hash(&sha256_desc) < 0) return SQLITE_ERROR;
+    if(register_hash(&sha1_desc) < 0) return SQLITE_ERROR;
+    if(fortuna_start(&prng) != CRYPT_OK) {
+      return SQLITE_ERROR;
+    }
+
+    ltc_init = 1;
+  }
+  ltc_ref_count++;
+
+  bytes = rng_get_bytes(random_buffer, FORTUNA_MAX_SZ, NULL);
+  sqlcipher_log(SQLCIPHER_LOG_TRACE, SQLCIPHER_LOG_PROVIDER, "sqlcipher_ltc_activate: seeded fortuna with %d bytes from rng_get_bytes", bytes);
+
+  if(sqlcipher_ltc_add_random(ctx, random_buffer, FORTUNA_MAX_SZ) != SQLITE_OK) {
+    return SQLITE_ERROR;
+  }
+  sqlcipher_memset(random_buffer, 0, FORTUNA_MAX_SZ);
+
+  sqlcipher_log(SQLCIPHER_LOG_TRACE, SQLCIPHER_LOG_MUTEX, "sqlcipher_ltc_activate: leaving SQLCIPHER_MUTEX_PROVIDER_ACTIVATE");
+  sqlite3_mutex_leave(sqlcipher_mutex(SQLCIPHER_MUTEX_PROVIDER_ACTIVATE));
+  sqlcipher_log(SQLCIPHER_LOG_TRACE, SQLCIPHER_LOG_MUTEX, "sqlcipher_ltc_activate: left SQLCIPHER_MUTEX_PROVIDER_ACTIVATE");
+
+  return SQLITE_OK;
+}
+
+static int sqlcipher_ltc_deactivate(void *ctx) {
+  sqlcipher_log(SQLCIPHER_LOG_TRACE, SQLCIPHER_LOG_MUTEX, "sqlcipher_ltc_deactivate: entering SQLCIPHER_MUTEX_PROVIDER_ACTIVATE");
+  sqlite3_mutex_enter(sqlcipher_mutex(SQLCIPHER_MUTEX_PROVIDER_ACTIVATE));
+  sqlcipher_log(SQLCIPHER_LOG_TRACE, SQLCIPHER_LOG_MUTEX, "sqlcipher_ltc_deactivate: entered SQLCIPHER_MUTEX_PROVIDER_ACTIVATE");
+
+  ltc_ref_count--;
+  if(ltc_ref_count == 0){
+    fortuna_done(&prng);
+    sqlcipher_memset((void *)&prng, 0, sizeof(prng));
+  }
+
+  sqlcipher_log(SQLCIPHER_LOG_TRACE, SQLCIPHER_LOG_MUTEX, "sqlcipher_ltc_deactivate: leaving SQLCIPHER_MUTEX_PROVIDER_ACTIVATE");
+  sqlite3_mutex_leave(sqlcipher_mutex(SQLCIPHER_MUTEX_PROVIDER_ACTIVATE));
+  sqlcipher_log(SQLCIPHER_LOG_TRACE, SQLCIPHER_LOG_MUTEX, "sqlcipher_ltc_deactivate: left SQLCIPHER_MUTEX_PROVIDER_ACTIVATE");
+
+  return SQLITE_OK;
+}
+
+static const char* sqlcipher_ltc_get_provider_name(void *ctx) {
+  return "libtomcrypt";
+}
+
+static const char* sqlcipher_ltc_get_provider_version(void *ctx) {
+  return SCRYPT;
+}
+
+static int sqlcipher_ltc_random(void *ctx, void *buffer, int length) {
+  sqlcipher_log(SQLCIPHER_LOG_TRACE, SQLCIPHER_LOG_MUTEX, "sqlcipher_ltc_random: entering SQLCIPHER_MUTEX_PROVIDER_RAND");
+  sqlite3_mutex_enter(sqlcipher_mutex(SQLCIPHER_MUTEX_PROVIDER_RAND));
+  sqlcipher_log(SQLCIPHER_LOG_TRACE, SQLCIPHER_LOG_MUTEX, "sqlcipher_ltc_random: entered SQLCIPHER_MUTEX_PROVIDER_RAND");
+
+  fortuna_read(buffer, length, &prng);
+
+  sqlcipher_log(SQLCIPHER_LOG_TRACE, SQLCIPHER_LOG_MUTEX, "sqlcipher_ltc_random: leaving SQLCIPHER_MUTEX_PROVIDER_RAND");
+  sqlite3_mutex_leave(sqlcipher_mutex(SQLCIPHER_MUTEX_PROVIDER_RAND));
+  sqlcipher_log(SQLCIPHER_LOG_TRACE, SQLCIPHER_LOG_MUTEX, "sqlcipher_ltc_random: left SQLCIPHER_MUTEX_PROVIDER_RAND");
+
+  return SQLITE_OK;
+}
+
+static int sqlcipher_ltc_hmac(
+  void *ctx, int algorithm,
+  const unsigned char *hmac_key, int key_sz,
+  const unsigned char *in, int in_sz,
+  const unsigned char *in2, int in2_sz,
+  unsigned char *out
+) {
+  int rc, hash_idx;
+  unsigned long outlen;
+  hmac_state *hmac = NULL;
+
+  if(in == NULL) goto error;
+
+  switch(algorithm) {
+    case SQLCIPHER_HMAC_SHA1:
+      hash_idx = find_hash("sha1");
+      break;
+    case SQLCIPHER_HMAC_SHA256:
+      hash_idx = find_hash("sha256");
+      break;
+    case SQLCIPHER_HMAC_SHA512:
+      hash_idx = find_hash("sha512");
+      break;
+    default:
+      sqlcipher_log(SQLCIPHER_LOG_ERROR, SQLCIPHER_LOG_PROVIDER, "%s: unsupported hmac algorithm", __func__);
+      goto error;
+  }
+
+  if(hash_idx < 0) {
+    sqlcipher_log(SQLCIPHER_LOG_ERROR, SQLCIPHER_LOG_PROVIDER, "%s: failed find_hash lookup", __func__);
+    goto error;
+  }
+
+  outlen = hash_descriptor[hash_idx].hashsize;
+
+  if(!(hmac = sqlcipher_malloc(sizeof(hmac_state)))) {
+    sqlcipher_log(SQLCIPHER_LOG_ERROR, SQLCIPHER_LOG_PROVIDER, "%s: failed to allocate hmac_state", __func__);
+    goto error;
+  }
+  if((rc = hmac_init(hmac, hash_idx, hmac_key, key_sz)) != CRYPT_OK) {
+    sqlcipher_log(SQLCIPHER_LOG_ERROR, SQLCIPHER_LOG_PROVIDER, "%s: hmac_init failed %d", __func__, rc);
+    goto error;
+  }
+  if((rc = hmac_process(hmac, in, in_sz)) != CRYPT_OK) {
+    sqlcipher_log(SQLCIPHER_LOG_ERROR, SQLCIPHER_LOG_PROVIDER, "%s: hmac_process failed %d", __func__, rc);
+    goto error;
+  }
+  if(in2 != NULL && (rc = hmac_process(hmac, in2, in2_sz)) != CRYPT_OK) {
+    sqlcipher_log(SQLCIPHER_LOG_ERROR, SQLCIPHER_LOG_PROVIDER, "%s: hmac_process 2 failed %d", __func__, rc);
+    goto error;
+  }
+  if((rc = hmac_done(hmac, out, &outlen)) != CRYPT_OK) {
+    sqlcipher_log(SQLCIPHER_LOG_ERROR, SQLCIPHER_LOG_PROVIDER, "%s: done failed %d", __func__, rc);
+    goto error;
+  }
+
+  rc = SQLITE_OK;
+  goto cleanup;
+
+error:
+  rc = SQLITE_ERROR;
+
+cleanup:
+  if(hmac) sqlcipher_free(hmac, sizeof(hmac_state));
+  return rc;
+}
+
+static int sqlcipher_ltc_kdf(
+  void *ctx, int algorithm,
+  const unsigned char *pass, int pass_sz,
+  const unsigned char* salt, int salt_sz,
+  int workfactor,
+  int key_sz, unsigned char *key
+) {
+  int rc, hash_idx;
+  unsigned long outlen = key_sz;
+
+  switch(algorithm) {
+    case SQLCIPHER_HMAC_SHA1:
+      hash_idx = find_hash("sha1");
+      break;
+    case SQLCIPHER_HMAC_SHA256:
+      hash_idx = find_hash("sha256");
+      break;
+    case SQLCIPHER_HMAC_SHA512:
+      hash_idx = find_hash("sha512");
+      break;
+    default:
+      sqlcipher_log(SQLCIPHER_LOG_ERROR, SQLCIPHER_LOG_PROVIDER, "%s: unsupported hmac algorithm", __func__);
+      return SQLITE_ERROR;
+  }
+
+  if(hash_idx < 0) {
+    sqlcipher_log(SQLCIPHER_LOG_ERROR, SQLCIPHER_LOG_PROVIDER, "%s: failed find_hash lookup", __func__);
+    return SQLITE_ERROR;
+  }
+
+  if((rc = pkcs_5_alg2(pass, pass_sz, salt, salt_sz,
+                       workfactor, hash_idx, key, &outlen)) != CRYPT_OK) {
+    sqlcipher_log(SQLCIPHER_LOG_ERROR, SQLCIPHER_LOG_PROVIDER, "%s: failed pkc_5_alg2 %d", __func__, rc);
+    return SQLITE_ERROR;
+  }
+  return SQLITE_OK;
+}
+
+static const char* sqlcipher_ltc_get_cipher(void *ctx) {
+  return "aes-256-cbc";
+}
+
+static int sqlcipher_ltc_cipher(
+  void *ctx, int mode,
+  const unsigned char *key, int key_sz,
+  const unsigned char *iv,
+  const unsigned char *in, int in_sz,
+  unsigned char *out
+) {
+  int rc, cipher_idx;
+  symmetric_CBC *cbc = NULL;
+
+  if((cipher_idx = find_cipher(LTC_CIPHER)) == -1) {
+    sqlcipher_log(SQLCIPHER_LOG_ERROR, SQLCIPHER_LOG_PROVIDER, "%s: failed find_cipher lookup", __func__);
+    goto error;
+  }
+  if(!(cbc = sqlcipher_malloc(sizeof(symmetric_CBC)))) {
+    sqlcipher_log(SQLCIPHER_LOG_ERROR, SQLCIPHER_LOG_PROVIDER, "%s: failed to allocate symmetric_CBC", __func__);
+    goto error;
+  }
+  if((rc = cbc_start(cipher_idx, iv, key, key_sz, 0, cbc)) != CRYPT_OK) {
+    sqlcipher_log(SQLCIPHER_LOG_ERROR, SQLCIPHER_LOG_PROVIDER, "%s: failed cbc_start %d", __func__, rc);
+    goto error;
+  }
+  if(mode == SQLCIPHER_ENCRYPT) {
+    if((rc = cbc_encrypt(in, out, in_sz, cbc)) != CRYPT_OK) {
+      sqlcipher_log(SQLCIPHER_LOG_ERROR, SQLCIPHER_LOG_PROVIDER, "%s: failed cbc_encrypt %d", __func__, rc);
+      goto error;
+    }
+  } else {
+    if((rc = cbc_decrypt(in, out, in_sz, cbc)) != CRYPT_OK) {
+      sqlcipher_log(SQLCIPHER_LOG_ERROR, SQLCIPHER_LOG_PROVIDER, "%s: failed cbc_decrypt %d", __func__, rc);
+      goto error;
+    }
+  }
+  if((rc = cbc_done(cbc)) != CRYPT_OK) {
+    sqlcipher_log(SQLCIPHER_LOG_ERROR, SQLCIPHER_LOG_PROVIDER, "%s: failed cbc_done %d", __func__, rc);
+    goto error;
+  }
+
+  rc = SQLITE_OK;
+  goto cleanup;
+
+error:
+  rc = SQLITE_ERROR;
+
+cleanup:
+  if(cbc) sqlcipher_free(cbc, sizeof(symmetric_CBC));
+  return rc;
+}
+
+static int sqlcipher_ltc_get_key_sz(void *ctx) {
+  int cipher_idx = find_cipher(LTC_CIPHER);
+  return cipher_descriptor[cipher_idx].max_key_length;
+}
+
+static int sqlcipher_ltc_get_iv_sz(void *ctx) {
+  int cipher_idx = find_cipher(LTC_CIPHER);
+  return cipher_descriptor[cipher_idx].block_length;
+}
+
+static int sqlcipher_ltc_get_block_sz(void *ctx) {
+  int cipher_idx = find_cipher(LTC_CIPHER);
+  return cipher_descriptor[cipher_idx].block_length;
+}
+
+static int sqlcipher_ltc_get_hmac_sz(void *ctx, int algorithm) {
+  int hash_idx;
+  switch(algorithm) {
+    case SQLCIPHER_HMAC_SHA1:
+      hash_idx = find_hash("sha1");
+      break;
+    case SQLCIPHER_HMAC_SHA256:
+      hash_idx = find_hash("sha256");
+      break;
+    case SQLCIPHER_HMAC_SHA512:
+      hash_idx = find_hash("sha512");
+      break;
+    default:
+      return 0;
+  }
+
+  if(hash_idx < 0) return 0;
+
+  return hash_descriptor[hash_idx].hashsize;
+}
+
+static int sqlcipher_ltc_ctx_init(void **ctx) {
+  sqlcipher_ltc_activate(NULL);
+  return SQLITE_OK;
+}
+
+static int sqlcipher_ltc_ctx_free(void **ctx) {
+  sqlcipher_ltc_deactivate(&ctx);
+  return SQLITE_OK;
+}
+
+static int sqlcipher_ltc_fips_status(void *ctx) {
+  return 0;
+}
+
+int sqlcipher_ltc_setup(sqlcipher_provider *p) {
+  p->init = NULL;
+  p->shutdown = NULL;
+  p->get_provider_name = sqlcipher_ltc_get_provider_name;
+  p->random = sqlcipher_ltc_random;
+  p->hmac = sqlcipher_ltc_hmac;
+  p->kdf = sqlcipher_ltc_kdf;
+  p->cipher = sqlcipher_ltc_cipher;
+  p->get_cipher = sqlcipher_ltc_get_cipher;
+  p->get_key_sz = sqlcipher_ltc_get_key_sz;
+  p->get_iv_sz = sqlcipher_ltc_get_iv_sz;
+  p->get_block_sz = sqlcipher_ltc_get_block_sz;
+  p->get_hmac_sz = sqlcipher_ltc_get_hmac_sz;
+  p->ctx_init = sqlcipher_ltc_ctx_init;
+  p->ctx_free = sqlcipher_ltc_ctx_free;
+  p->add_random = sqlcipher_ltc_add_random;
+  p->fips_status = sqlcipher_ltc_fips_status;
+  p->get_provider_version = sqlcipher_ltc_get_provider_version;
+  return SQLITE_OK;
+}
+
+#endif
+#endif
+/* END SQLCIPHER */
+
+/************** End of crypto_libtomcrypt.c **********************************/
 /************** Begin file crypto_openssl.c **********************************/
 /*
 ** SQLCipher
@@ -116287,6 +116697,14 @@ static int resolveSelectStep(Walker *pWalker, Select *p){
     if( p->pNext && p->pEList->nExpr!=p->pNext->pEList->nExpr ){
       sqlite3SelectWrongNumTermsError(pParse, p->pNext);
       return WRC_Abort;
+    }
+
+    /* If the SELECT statement contains ON clauses that were moved into
+    ** the WHERE clause, go through and verify that none of the terms
+    ** in the ON clauses reference tables to the right of the ON clause. */
+    if( (p->selFlags & SF_OnToWhere) ){
+      sqlite3SelectCheckOnClauses(pParse, p);
+      if( pParse->nErr ) return WRC_Abort;
     }
 
     /* Advance to the next term of the compound
@@ -159611,7 +160029,7 @@ static int selectCheckOnClausesSelect(Walker *pWalker, Select *pSelect){
 ** Check all ON clauses in pSelect to verify that they do not reference
 ** columns to the right.
 */
-static void selectCheckOnClauses(Parse *pParse, Select *pSelect){
+SQLITE_PRIVATE void sqlite3SelectCheckOnClauses(Parse *pParse, Select *pSelect){
   Walker w;
   CheckOnCtx sCtx;
   assert( pSelect->selFlags & SF_OnToWhere );
@@ -159753,18 +160171,6 @@ SQLITE_PRIVATE int sqlite3Select(
     sqlite3TreeViewSelect(0, p, 0);
   }
 #endif
-
-  /* If the SELECT statement contains ON clauses that were moved into
-  ** the WHERE clause, go through and verify that none of the terms
-  ** in the ON clauses reference tables to the right of the ON clause.
-  ** Do this now, after name resolution, but before query flattening
-  */
-  if( p->selFlags & SF_OnToWhere ){
-    selectCheckOnClauses(pParse, p);
-    if( pParse->nErr ){
-      goto select_end;
-    }
-  }
 
   /* If the SF_UFSrcCheck flag is set, then this function is being called
   ** as part of populating the temp table for an UPDATE...FROM statement.
@@ -169946,6 +170352,15 @@ SQLITE_PRIVATE SQLITE_NOINLINE void sqlite3WhereRightJoinLoop(
       pSubWhere = sqlite3ExprAnd(pParse, pSubWhere,
                                  sqlite3ExprDup(pParse->db, pTerm->pExpr, 0));
     }
+  }
+  if( pLevel->iIdxCur ){
+    /* pSubWhere may contain expressions that read from an index on the
+    ** table on the RHS of the right join. All such expressions first test
+    ** if the index is pointing at a NULL row, and if so, read from the
+    ** table cursor instead. So ensure that the index cursor really is
+    ** pointing at a NULL row here, so that no values are read from it during
+    ** the scan of the RHS of the RIGHT join below.  */
+    sqlite3VdbeAddOp1(v, OP_NullRow, pLevel->iIdxCur);
   }
   pFrom = &uSrc.sSrc;
   pFrom->nSrc = 1;
@@ -229475,7 +229890,7 @@ static int rbuDeltaApply(
           /* ERROR: copy exceeds output file size */
           return -1;
         }
-        if( (int)(ofst+cnt) > lenSrc ){
+        if( (u64)ofst+(u64)cnt > (u64)lenSrc ){
           /* ERROR: copy extends past end of input */
           return -1;
         }
@@ -257762,7 +258177,7 @@ static void fts5DoSecureDelete(
   int iSegid = pSeg->pSeg->iSegid;
   u8 *aPg = pSeg->pLeaf->p;
   int nPg = pSeg->pLeaf->nn;
-  int iPgIdx = pSeg->pLeaf->szLeaf;
+  int iPgIdx = pSeg->pLeaf->szLeaf;         /* Offset of page footer */
 
   u64 iDelta = 0;
   int iNextOff = 0;
@@ -257841,7 +258256,7 @@ static void fts5DoSecureDelete(
         iSOP += fts5GetVarint32(&aPg[iSOP], nPos);
       }
       assert_nc( iSOP==pSeg->iLeafOffset );
-      iNextOff = pSeg->iLeafOffset + pSeg->nPos;
+      iNextOff = iSOP + pSeg->nPos;
     }
   }
 
@@ -265660,7 +266075,7 @@ static void fts5SourceIdFunc(
 ){
   assert( nArg==0 );
   UNUSED_PARAM2(nArg, apUnused);
-  sqlite3_result_text(pCtx, "fts5: 2026-01-09 17:27:48 b270f8339eb13b504d0b2ba154ebca966b7dde08e40c3ed7d559749818cb2075", -1, SQLITE_TRANSIENT);
+  sqlite3_result_text(pCtx, "fts5: 2026-03-13 10:38:09 737ae4a34738ffa0c3ff7f9bb18df914dd1cad163f28fd6b6e114a344fe6d618", -1, SQLITE_TRANSIENT);
 }
 
 /*
@@ -271258,335 +271673,6 @@ SQLITE_API int sqlite3_stmt_init(
 #endif /* !defined(SQLITE_CORE) || defined(SQLITE_ENABLE_STMTVTAB) */
 
 /************** End of stmt.c ************************************************/
-/************** Begin EXTRA_SRC file crypto_libtomcrypt.c ********************/
-/*
-** SQLCipher
-** http://sqlcipher.net
-**
-** Copyright (c) 2008 - 2013, ZETETIC LLC
-** All rights reserved.
-**
-** Redistribution and use in source and binary forms, with or without
-** modification, are permitted provided that the following conditions are met:
-**     * Redistributions of source code must retain the above copyright
-**       notice, this list of conditions and the following disclaimer.
-**     * Redistributions in binary form must reproduce the above copyright
-**       notice, this list of conditions and the following disclaimer in the
-**       documentation and/or other materials provided with the distribution.
-**     * Neither the name of the ZETETIC LLC nor the
-**       names of its contributors may be used to endorse or promote products
-**       derived from this software without specific prior written permission.
-**
-** THIS SOFTWARE IS PROVIDED BY ZETETIC LLC ''AS IS'' AND ANY
-** EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-** WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-** DISCLAIMED. IN NO EVENT SHALL ZETETIC LLC BE LIABLE FOR ANY
-** DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
-** (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-** LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
-** ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-** (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-** SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-**
-*/
-
-// Support for LibTomCrypt in SQLCipher is now maintained externally
-// due to https://github.com/sqlcipher/sqlcipher/issues/564
-//
-// This file was obtained from the last known release:
-// https://raw.githubusercontent.com/sqlcipher/sqlcipher/refs/tags/v4.11.0/src/crypto_libtomcrypt.c
-//
-// Note that this file is not compiled directly, but instead is
-// added to the SQLite amalgamation by scripts/build_sqlcipher.sh
-
-/* BEGIN SQLCIPHER */
-#ifdef SQLITE_HAS_CODEC
-#ifdef SQLCIPHER_CRYPTO_LIBTOMCRYPT
-//#include "sqliteInt.h"
-//#include "sqlcipher.h"
-#include <tomcrypt.h>
-
-#define FORTUNA_MAX_SZ 32
-static prng_state prng;
-static volatile unsigned int ltc_init = 0;
-static volatile unsigned int ltc_ref_count = 0;
-
-#define LTC_CIPHER "rijndael"
-
-static int sqlcipher_ltc_add_random(void *ctx, const void *buffer, int length) {
-  int rc = 0;
-  int data_to_read = length;
-  int block_sz = data_to_read < FORTUNA_MAX_SZ ? data_to_read : FORTUNA_MAX_SZ;
-  const unsigned char * data = (const unsigned char *)buffer;
-
-  sqlcipher_log(SQLCIPHER_LOG_TRACE, SQLCIPHER_LOG_MUTEX, "sqlcipher_ltc_add_random: entering SQLCIPHER_MUTEX_PROVIDER_RAND");
-  sqlite3_mutex_enter(sqlcipher_mutex(SQLCIPHER_MUTEX_PROVIDER_RAND));
-  sqlcipher_log(SQLCIPHER_LOG_TRACE, SQLCIPHER_LOG_MUTEX, "sqlcipher_ltc_add_random: entered SQLCIPHER_MUTEX_PROVIDER_RAND");
-
-  while(data_to_read > 0){
-    rc = fortuna_add_entropy(data, block_sz, &prng);
-    rc = rc != CRYPT_OK ? SQLITE_ERROR : SQLITE_OK;
-    if(rc != SQLITE_OK){
-      break;
-    }
-    data_to_read -= block_sz;
-    data += block_sz;
-    block_sz = data_to_read < FORTUNA_MAX_SZ ? data_to_read : FORTUNA_MAX_SZ;
-  }
-  fortuna_ready(&prng);
-
-  sqlcipher_log(SQLCIPHER_LOG_TRACE, SQLCIPHER_LOG_MUTEX, "sqlcipher_ltc_add_random: leaving SQLCIPHER_MUTEX_PROVIDER_RAND");
-  sqlite3_mutex_leave(sqlcipher_mutex(SQLCIPHER_MUTEX_PROVIDER_RAND));
-  sqlcipher_log(SQLCIPHER_LOG_TRACE, SQLCIPHER_LOG_MUTEX, "sqlcipher_ltc_add_random: left SQLCIPHER_MUTEX_PROVIDER_RAND");
-
-  return rc;
-}
-
-static int sqlcipher_ltc_activate(void *ctx) {
-  unsigned char random_buffer[FORTUNA_MAX_SZ];
-  int bytes = 0;
-
-  sqlcipher_log(SQLCIPHER_LOG_TRACE, SQLCIPHER_LOG_MUTEX, "sqlcipher_ltc_activate: entering SQLCIPHER_MUTEX_PROVIDER_ACTIVATE");
-  sqlite3_mutex_enter(sqlcipher_mutex(SQLCIPHER_MUTEX_PROVIDER_ACTIVATE));
-  sqlcipher_log(SQLCIPHER_LOG_TRACE, SQLCIPHER_LOG_MUTEX, "sqlcipher_ltc_activate: entered SQLCIPHER_MUTEX_PROVIDER_ACTIVATE");
-
-  sqlcipher_memset(random_buffer, 0, FORTUNA_MAX_SZ);
-  if(ltc_init == 0) {
-    if(register_prng(&fortuna_desc) < 0) return SQLITE_ERROR;
-    if(register_cipher(&rijndael_desc) < 0) return SQLITE_ERROR;
-    if(register_hash(&sha512_desc) < 0) return SQLITE_ERROR;
-    if(register_hash(&sha256_desc) < 0) return SQLITE_ERROR;
-    if(register_hash(&sha1_desc) < 0) return SQLITE_ERROR;
-    if(fortuna_start(&prng) != CRYPT_OK) {
-      return SQLITE_ERROR;
-    }
-
-    ltc_init = 1;
-  }
-  ltc_ref_count++;
-
-#ifndef SQLCIPHER_TEST
-  bytes = rng_get_bytes(random_buffer, FORTUNA_MAX_SZ, NULL);
-#endif
-  sqlcipher_log(SQLCIPHER_LOG_TRACE, SQLCIPHER_LOG_PROVIDER, "sqlcipher_ltc_activate: seeded fortuna with %d bytes from rng_get_bytes", bytes);
-
-  if(sqlcipher_ltc_add_random(ctx, random_buffer, FORTUNA_MAX_SZ) != SQLITE_OK) {
-    return SQLITE_ERROR;
-  }
-  sqlcipher_memset(random_buffer, 0, FORTUNA_MAX_SZ);
-
-  sqlcipher_log(SQLCIPHER_LOG_TRACE, SQLCIPHER_LOG_MUTEX, "sqlcipher_ltc_activate: leaving SQLCIPHER_MUTEX_PROVIDER_ACTIVATE");
-  sqlite3_mutex_leave(sqlcipher_mutex(SQLCIPHER_MUTEX_PROVIDER_ACTIVATE));
-  sqlcipher_log(SQLCIPHER_LOG_TRACE, SQLCIPHER_LOG_MUTEX, "sqlcipher_ltc_activate: left SQLCIPHER_MUTEX_PROVIDER_ACTIVATE");
-
-  return SQLITE_OK;
-}
-
-static int sqlcipher_ltc_deactivate(void *ctx) {
-  sqlcipher_log(SQLCIPHER_LOG_TRACE, SQLCIPHER_LOG_MUTEX, "sqlcipher_ltc_deactivate: entering SQLCIPHER_MUTEX_PROVIDER_ACTIVATE");
-  sqlite3_mutex_enter(sqlcipher_mutex(SQLCIPHER_MUTEX_PROVIDER_ACTIVATE));
-  sqlcipher_log(SQLCIPHER_LOG_TRACE, SQLCIPHER_LOG_MUTEX, "sqlcipher_ltc_deactivate: entered SQLCIPHER_MUTEX_PROVIDER_ACTIVATE");
-
-  ltc_ref_count--;
-  if(ltc_ref_count == 0){
-    fortuna_done(&prng);
-    sqlcipher_memset((void *)&prng, 0, sizeof(prng));
-  }
-
-  sqlcipher_log(SQLCIPHER_LOG_TRACE, SQLCIPHER_LOG_MUTEX, "sqlcipher_ltc_deactivate: leaving SQLCIPHER_MUTEX_PROVIDER_ACTIVATE");
-  sqlite3_mutex_leave(sqlcipher_mutex(SQLCIPHER_MUTEX_PROVIDER_ACTIVATE));
-  sqlcipher_log(SQLCIPHER_LOG_TRACE, SQLCIPHER_LOG_MUTEX, "sqlcipher_ltc_deactivate: left SQLCIPHER_MUTEX_PROVIDER_ACTIVATE");
-
-  return SQLITE_OK;
-}
-
-static const char* sqlcipher_ltc_get_provider_name(void *ctx) {
-  return "libtomcrypt";
-}
-
-static const char* sqlcipher_ltc_get_provider_version(void *ctx) {
-  return SCRYPT;
-}
-
-static int sqlcipher_ltc_random(void *ctx, void *buffer, int length) {
-  sqlcipher_log(SQLCIPHER_LOG_TRACE, SQLCIPHER_LOG_MUTEX, "sqlcipher_ltc_random: entering SQLCIPHER_MUTEX_PROVIDER_RAND");
-  sqlite3_mutex_enter(sqlcipher_mutex(SQLCIPHER_MUTEX_PROVIDER_RAND));
-  sqlcipher_log(SQLCIPHER_LOG_TRACE, SQLCIPHER_LOG_MUTEX, "sqlcipher_ltc_random: entered SQLCIPHER_MUTEX_PROVIDER_RAND");
-
-  fortuna_read(buffer, length, &prng);
-
-  sqlcipher_log(SQLCIPHER_LOG_TRACE, SQLCIPHER_LOG_MUTEX, "sqlcipher_ltc_random: leaving SQLCIPHER_MUTEX_PROVIDER_RAND");
-  sqlite3_mutex_leave(sqlcipher_mutex(SQLCIPHER_MUTEX_PROVIDER_RAND));
-  sqlcipher_log(SQLCIPHER_LOG_TRACE, SQLCIPHER_LOG_MUTEX, "sqlcipher_ltc_random: left SQLCIPHER_MUTEX_PROVIDER_RAND");
-
-  return SQLITE_OK;
-}
-
-static int sqlcipher_ltc_hmac(
-  void *ctx, int algorithm,
-  const unsigned char *hmac_key, int key_sz,
-  const unsigned char *in, int in_sz,
-  const unsigned char *in2, int in2_sz,
-  unsigned char *out
-) {
-  int rc, hash_idx;
-  hmac_state hmac;
-  unsigned long outlen;
-  switch(algorithm) {
-    case SQLCIPHER_HMAC_SHA1:
-      hash_idx = find_hash("sha1");
-      break;
-    case SQLCIPHER_HMAC_SHA256:
-      hash_idx = find_hash("sha256");
-      break;
-    case SQLCIPHER_HMAC_SHA512:
-      hash_idx = find_hash("sha512");
-      break;
-    default:
-      return SQLITE_ERROR;
-  }
-
-  if(hash_idx < 0) return SQLITE_ERROR;
-  outlen = hash_descriptor[hash_idx].hashsize;
-
-  if(in == NULL) return SQLITE_ERROR;
-  if((rc = hmac_init(&hmac, hash_idx, hmac_key, key_sz)) != CRYPT_OK) return SQLITE_ERROR;
-  if((rc = hmac_process(&hmac, in, in_sz)) != CRYPT_OK) return SQLITE_ERROR;
-  if(in2 != NULL && (rc = hmac_process(&hmac, in2, in2_sz)) != CRYPT_OK) return SQLITE_ERROR;
-  if((rc = hmac_done(&hmac, out, &outlen)) != CRYPT_OK) return SQLITE_ERROR;
-  return SQLITE_OK;
-}
-
-static int sqlcipher_ltc_kdf(
-  void *ctx, int algorithm,
-  const unsigned char *pass, int pass_sz,
-  const unsigned char* salt, int salt_sz,
-  int workfactor,
-  int key_sz, unsigned char *key
-) {
-  int rc, hash_idx;
-  unsigned long outlen = key_sz;
-
-  switch(algorithm) {
-    case SQLCIPHER_HMAC_SHA1:
-      hash_idx = find_hash("sha1");
-      break;
-    case SQLCIPHER_HMAC_SHA256:
-      hash_idx = find_hash("sha256");
-      break;
-    case SQLCIPHER_HMAC_SHA512:
-      hash_idx = find_hash("sha512");
-      break;
-    default:
-      return SQLITE_ERROR;
-  }
-  if(hash_idx < 0) return SQLITE_ERROR;
-
-  if((rc = pkcs_5_alg2(pass, pass_sz, salt, salt_sz,
-                       workfactor, hash_idx, key, &outlen)) != CRYPT_OK) {
-    return SQLITE_ERROR;
-  }
-  return SQLITE_OK;
-}
-
-static const char* sqlcipher_ltc_get_cipher(void *ctx) {
-  return "aes-256-cbc";
-}
-
-static int sqlcipher_ltc_cipher(
-  void *ctx, int mode,
-  const unsigned char *key, int key_sz,
-  const unsigned char *iv,
-  const unsigned char *in, int in_sz,
-  unsigned char *out
-) {
-  int rc, cipher_idx;
-  symmetric_CBC cbc;
-
-  if((cipher_idx = find_cipher(LTC_CIPHER)) == -1) return SQLITE_ERROR;
-  if((rc = cbc_start(cipher_idx, iv, key, key_sz, 0, &cbc)) != CRYPT_OK) return SQLITE_ERROR;
-  rc = mode == SQLCIPHER_ENCRYPT ? cbc_encrypt(in, out, in_sz, &cbc) : cbc_decrypt(in, out, in_sz, &cbc);
-  if(rc != CRYPT_OK) return SQLITE_ERROR;
-  cbc_done(&cbc);
-  return SQLITE_OK;
-}
-
-static int sqlcipher_ltc_get_key_sz(void *ctx) {
-  int cipher_idx = find_cipher(LTC_CIPHER);
-  return cipher_descriptor[cipher_idx].max_key_length;
-}
-
-static int sqlcipher_ltc_get_iv_sz(void *ctx) {
-  int cipher_idx = find_cipher(LTC_CIPHER);
-  return cipher_descriptor[cipher_idx].block_length;
-}
-
-static int sqlcipher_ltc_get_block_sz(void *ctx) {
-  int cipher_idx = find_cipher(LTC_CIPHER);
-  return cipher_descriptor[cipher_idx].block_length;
-}
-
-static int sqlcipher_ltc_get_hmac_sz(void *ctx, int algorithm) {
-  int hash_idx;
-  switch(algorithm) {
-    case SQLCIPHER_HMAC_SHA1:
-      hash_idx = find_hash("sha1");
-      break;
-    case SQLCIPHER_HMAC_SHA256:
-      hash_idx = find_hash("sha256");
-      break;
-    case SQLCIPHER_HMAC_SHA512:
-      hash_idx = find_hash("sha512");
-      break;
-    default:
-      return 0;
-  }
-
-  if(hash_idx < 0) return 0;
-
-  return hash_descriptor[hash_idx].hashsize;
-}
-
-static int sqlcipher_ltc_ctx_init(void **ctx) {
-  sqlcipher_ltc_activate(NULL);
-  return SQLITE_OK;
-}
-
-static int sqlcipher_ltc_ctx_free(void **ctx) {
-  sqlcipher_ltc_deactivate(&ctx);
-  return SQLITE_OK;
-}
-
-static int sqlcipher_ltc_fips_status(void *ctx) {
-  return 0;
-}
-
-int sqlcipher_ltc_setup(sqlcipher_provider *p) {
-  p->init = NULL;
-  p->shutdown = NULL;
-  p->get_provider_name = sqlcipher_ltc_get_provider_name;
-  p->random = sqlcipher_ltc_random;
-  p->hmac = sqlcipher_ltc_hmac;
-  p->kdf = sqlcipher_ltc_kdf;
-  p->cipher = sqlcipher_ltc_cipher;
-  p->get_cipher = sqlcipher_ltc_get_cipher;
-  p->get_key_sz = sqlcipher_ltc_get_key_sz;
-  p->get_iv_sz = sqlcipher_ltc_get_iv_sz;
-  p->get_block_sz = sqlcipher_ltc_get_block_sz;
-  p->get_hmac_sz = sqlcipher_ltc_get_hmac_sz;
-  p->ctx_init = sqlcipher_ltc_ctx_init;
-  p->ctx_free = sqlcipher_ltc_ctx_free;
-  p->add_random = sqlcipher_ltc_add_random;
-  p->fips_status = sqlcipher_ltc_fips_status;
-  p->get_provider_version = sqlcipher_ltc_get_provider_version;
-  return SQLITE_OK;
-}
-
-#endif
-#endif
-/* END SQLCIPHER */
-
-/************** End of EXTRA_SRC crypto_libtomcrypt.c ************************/
 /* Return the source-id for this library */
 SQLITE_API const char *sqlite3_sourceid(void){ return SQLITE_SOURCE_ID; }
 #endif /* SQLITE_AMALGAMATION */

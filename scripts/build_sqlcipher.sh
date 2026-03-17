@@ -18,12 +18,8 @@ TARBALL=v${SQLCIPHER_VERSION}.tar.gz
 wget ${SQLCIPHER_REPO}/archive/refs/tags/${TARBALL}
 tar xvzf ${TARBALL}
 
-# need to also grab the old crypto_libtomcrypt.c due to https://github.com/sqlcipher/sqlcipher/issues/564
-#wget https://raw.githubusercontent.com/sqlcipher/sqlcipher/refs/tags/v4.11.0/src/crypto_libtomcrypt.c
-cp ${OLDPWD}/Sources/SQLCipher/crypto_libtomcrypt.c .
-
 ./sqlcipher-${SQLCIPHER_VERSION}/configure --with-tempstore=yes CFLAGS="-DSQLCIPHER_CRYPTO_LIBTOMCRYPT -DSQLCIPHER_CRYPTO_CUSTOM=sqlcipher_ltc_setup -DSQLITE_HAS_CODEC -DSQLITE_EXTRA_INIT=sqlcipher_extra_init -DSQLITE_EXTRA_SHUTDOWN=sqlcipher_extra_shutdown -I/opt/homebrew/include/ -L/opt/homebrew/lib/"
-make sqlite3.c EXTRA_SRC=crypto_libtomcrypt.c
+make sqlite3.c
 
 # insert some pragmas that quiesce warnings when building with SwiftPM
 mv sqlite3.c sqlite.c.orig
