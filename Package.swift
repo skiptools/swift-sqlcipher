@@ -4,6 +4,11 @@ import PackageDescription
 /// Compile-time options
 /// - seealso: [Recommended Compile-time Options](https://sqlite.org/compile.html#recommended_compile_time_options)
 let compileTimeOptions: [CSetting] = [
+    // SwiftPM does not define NDEBUG for C targets even in release
+    // builds, so sqlite3.c ships with its internal assert()s (and their
+    // documented ~3x overhead) enabled. Compile them out for release,
+    // matching what the autoconf/CMake builds do.
+    .define("NDEBUG", .when(configuration: .release)),
     // https://sqlite.org/compile.html#dqs
     .define("SQLITE_DQS", to: "0", .when(traits: ["DQS_0"])),
     .define("SQLITE_DQS", to: "1", .when(traits: ["DQS_1"])),
