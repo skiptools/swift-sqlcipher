@@ -6775,7 +6775,7 @@ SQLITE_API int sqlite3_collation_needed16(
 );
 
 /* BEGIN SQLCIPHER */
-#ifdef SQLITE_HAS_CODEC
+#if !defined(OMIT_SQLCIPHER)
 /*
 ** Specify the key for an encrypted database.  This routine should be
 ** called right after sqlite3_open().
